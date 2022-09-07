@@ -55,6 +55,10 @@
             background-color: lightgray;
             color: black;
 
+            border-width: 0 0 1px 0;
+            border-style: solid;
+            border-color: black;
+
         }
 
         h2 {
@@ -71,12 +75,38 @@
             text-transform: capitalize;
         }
 
-        .button {}
+        .button {
+            border-width: 1px;
+            border-color: transparent;
+            border-style: solid;
+        }
 
-        .icon-button {
+        .button:active {
+            border-color: black;
+            border-width: 1px;
+            border-style: solid;
+        }
+
+        .button:hover {
+            border-color: black;
+            border-width: 1px;
+            border-style: dotted;
+        }
+
+        .button-icon {
             background-color: transparent;
             color: black;
-            border: none;
+            border-radius: 1rem;
+        }
+
+        .button-submit {
+            background-color: lightgreen;
+            padding: 0.5rem;
+        }
+
+        form:invalid .button-submit {
+            background-color: rgba(144, 238, 144, 0.15);
+            color: rgba(0, 0, 0, 0.15);
         }
 
         #calendarArea {
@@ -91,7 +121,7 @@
 
             display: flex;
             flex-direction: column;
-            row-gap: 4px;
+            row-gap: 0.5rem;
             align-items: center;
 
             max-height: 100vh;
@@ -105,17 +135,21 @@
             min-height: 15rem;
             width: 15rem;
 
-            padding: 4px;
+            padding: 0.25rem;
 
             background-color: yellow;
             color: black;
 
             display: flex;
             flex-direction: column;
-            row-gap: 2px;
+            row-gap: 0.25rem;
 
-            border-width: 4px;
+            border-width: 0.5rem;
             border-style: solid;
+        }
+
+        .calendar-entry__header {
+            margin: 0.25rem;
         }
 
         .calendar-entry__activity {
@@ -184,7 +218,7 @@
             static TRANSPARENT = 'transparent';
             static WEEKDAY = Colors.YELLOW;
             static WEEKEND = Colors.PURPLE;
-            static ALL = [Colors.YELLOW, Colors.GREENYELLOW, Colors.PINK, Colors.TRANSPARENT];
+            static ALL = [Colors.YELLOW, Colors.GREENYELLOW, Colors.PINK, Colors.RED, Colors.PURPLE, Colors.TRANSPARENT];
         }
 
         class IdentifierUtility {
@@ -373,31 +407,41 @@
 
         class ButtonTypes {
             static ICON = ['button', 'button-icon'];
+            static SUBMIT = ['button', 'button-submit'];
         }
 
         class Icons {
             static DELETE = 'X';
+            static ADD = "+";
+            static EMPTY = "";
         }
 
         class ButtonFactory {
             static createIconButton(icon) {
                 const buttonElement = document.createElement('button');
-                buttonElement.classList.add('button', 'icon-button');
                 buttonElement.textContent = icon;
-                buttonElement.classList.add(ButtonTypes.ICON);
+                buttonElement.classList.add(...ButtonTypes.ICON);
+                return buttonElement;
+            }
+            static createSubmitButton(text = 'submit', icon = Icons.EMPTY) {
+                const buttonElement = document.createElement('button');
+                buttonElement.classList.add(...ButtonTypes.SUBMIT);
+                buttonElement.textContent = icon + text;
                 return buttonElement;
             }
         }
 
         class CalendarEntryRenderer {
+            #controller;
             constructor(controller) {
-                this.controller = controller;
+                this.#controller = controller;
             }
             render(dateString, entry) {
                 const container = document.createElement('div');
                 container.classList.add('calendar-entry');
                 this.#style(container, dateString, entry);
                 const dateLabel = document.createElement('h3');
+                dateLabel.classList.add('calendar-entry__header')
                 dateLabel.innerText = this.#formatDateString(dateString);
                 container.append(dateLabel);
                 for (let activity of entry?.activities || []) {
@@ -408,11 +452,16 @@
                     const deleteActivityButton = ButtonFactory.createIconButton(Icons.DELETE);
                     deleteActivityButton.onclick = (e) => {
                         e.stopPropagation();
-                        this.controller.onActivityDeleted(entry, activity.id);
+                        this.#controller.onActivityDeleted(entry, activity.id);
                     }
                     activityContainer.append(deleteActivityButton);
                     container.append(activityContainer);
                 }
+                container.onclick = (e) => {
+                        new AddEntryFormModal((newEntryValue) => {
+                            this.#controller.onActivityAdded(DateUtility.dateStringToDate(dateString), newEntryValue);
+                        }, dateString).show();
+                    }
                 return container;
             }
             #style(container, dateString, entry) {
@@ -435,6 +484,7 @@
                 const textLabel = document.createElement('label');
                 textLabel.textContent = 'Activity';
                 const textInput = document.createElement('input');
+                textInput.name = "text";
                 textInput.required = true;
                 textInput.minLength = 1;
                 textInput.maxLength = 255;
@@ -442,6 +492,7 @@
                 const colorLabel = document.createElement('label');
                 colorLabel.textContent = 'Color';
                 const colorSelect = document.createElement('select');
+                colorSelect.name = "color";
                 for (let color of Colors.ALL) {
                     const colorOption = document.createElement('option');
                     colorOption.textContent = color;
@@ -449,14 +500,13 @@
                     colorSelect.append(colorOption);
                 }
                 colorLabel.append(colorSelect);
-                const button = document.createElement('button');
-                button.type = 'submit';
-                button.textContent = '+Add';
+                const button = ButtonFactory.createSubmitButton("Add", Icons.ADD);
                 form.onsubmit = e => {
                     const text = textInput.value;
                     const color = colorSelect.value;
                     super.close();
-                    onAdd(new CalendarEntryActivity(text, color));
+                    const data = Object.fromEntries(new FormData(event.target));
+                    onAdd(CalendarEntryActivity.fromData(data));//new CalendarEntryActivity(text, color));
                 };
                 form.append(textLabel, colorLabel, button);
                 formArea.append(title, form);
@@ -490,11 +540,7 @@
                     const d = new Date(date); // clone to prevent weirdness
                     const calendarEntryElement = this.#calendarEntryRenderer.render(DateUtility.dateToDateString(date), state.calendarEntries[DateUtility.dateToDateString(date)]);
                     this.#calendarListElement.append(calendarEntryElement);
-                    calendarEntryElement.onclick = (e) => {
-                        new AddEntryFormModal((newEntryValue) => {
-                            this.#controller.onActivityAdded(d, newEntryValue);
-                        }, /*d.toLocaleDateString()*/DateUtility.dateToDateString(d)).show();
-                    };
+                    
                     date.setDate(date.getDate() + 1);
 
                 }
@@ -547,7 +593,7 @@
         (() => {
             const storageImplementation = new LocalStorageService();
             const storageManager = new StorageManager(storageImplementation);
-            const startingState = State.fromData(storageImplementation.open()) || new State(7, { '2022-9-6': new CalendarEntry(new Date(), ['Library', 'Movie']) });
+            const startingState = State.fromData(storageImplementation.open()) || new State();
             const model = new Model(startingState);
             const controller = new Controller(model);
             const view = new View(controller, new CalendarEntryRenderer(controller));
