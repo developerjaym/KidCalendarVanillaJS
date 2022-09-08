@@ -7,6 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KidCalendar</title>
     <style>
+        :root {
+            --border-width: 1px;
+            --space-thin: 0.25rem;
+            --space-thick: 0.5rem;
+            --space-extra-thick: 1rem;
+            --border-radius: 1rem;
+            --modal-z: 2;
+            --standard-z: 1;
+        }
+
         * {
             box-sizing: border-box;
         }
@@ -22,26 +32,35 @@
             margin: 0;
 
             grid-area: area;
-            z-index: 1;
+            z-index: var(--standard-z);
             max-height: 100vh;
         }
 
         form {
             display: flex;
             flex-direction: column;
-            row-gap: 4px;
+            row-gap: var(--space-thick);
         }
 
         form label {
             display: flex;
             flex-direction: column;
-            row-gap: 2px;
+            row-gap: var(--space-thin);
         }
 
-        input, select {
-            border-width: 0 0 1px 0;
+        input,
+        select,
+        .calendar-entry__activity {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        input,
+        select {
+            border-width: 0 0 var(--border-width) 0;
             border-style: solid;
             border-color: black;
+
+            padding: var(--space-thick);
         }
 
         .toolbar {
@@ -50,12 +69,12 @@
             justify-content: space-between;
             align-items: center;
 
-            padding: 0.5rem;
+            padding: var(--space-thick);
 
             background-color: lightgray;
             color: black;
 
-            border-width: 0 0 1px 0;
+            border-width: 0 0 var(--border-width) 0;
             border-style: solid;
             border-color: black;
 
@@ -64,7 +83,8 @@
         h2 {
             background-color: firebrick;
             color: rgba(255, 255, 255, 0.66);
-            padding: 0.5rem;
+            padding: var(--space-thick);
+            margin: var(--space-thin);
             font-family: 'Courier New', Courier, monospace;
             text-shadow: 1px 2px 12px black;
             font-weight: normal;
@@ -75,33 +95,39 @@
             text-transform: capitalize;
         }
 
+        .icon {
+            min-width: 2rem;
+        }
+
         .button {
-            border-width: 1px;
+            border-width: var(--border-width);
             border-color: transparent;
             border-style: solid;
+
+            text-transform: uppercase;
         }
 
         .button:active {
             border-color: black;
-            border-width: 1px;
+            border-width: var(--border-width);
             border-style: solid;
         }
 
         .button:hover {
             border-color: black;
-            border-width: 1px;
+            border-width: var(--border-width);
             border-style: dotted;
         }
 
         .button-icon {
             background-color: transparent;
             color: black;
-            border-radius: 1rem;
+            border-radius: var(--border-radius);
         }
 
         .button-submit {
             background-color: lightgreen;
-            padding: 0.5rem;
+            padding: var(--space-thick);
         }
 
         form:invalid .button-submit {
@@ -111,7 +137,7 @@
 
         #calendarArea {
             grid-area: area;
-            z-index: 1;
+            z-index: var(--standard-z);
 
             max-height: 100vh;
             overflow-y: clip;
@@ -121,13 +147,13 @@
 
             display: flex;
             flex-direction: column;
-            row-gap: 0.5rem;
+            row-gap: var(--space-thick);
             align-items: center;
 
             max-height: 100vh;
             overflow-y: scroll;
 
-            padding: 0.5rem 0.5rem 15rem 0.5rem;
+            padding: var(--space-thick) var(--space-thick) 15rem var(--space-thick);
 
         }
 
@@ -135,21 +161,21 @@
             min-height: 15rem;
             width: 15rem;
 
-            padding: 0.25rem;
+            padding: var(--space-thin);
 
             background-color: yellow;
             color: black;
 
             display: flex;
             flex-direction: column;
-            row-gap: 0.25rem;
+            row-gap: var(--space-thin);
 
-            border-width: 0.5rem;
+            border-width: var(--space-thick);
             border-style: solid;
         }
 
         .calendar-entry__header {
-            margin: 0.25rem;
+            margin: var(--space-thin);
         }
 
         .calendar-entry__activity {
@@ -159,11 +185,11 @@
 
             border: none;
 
-            padding: 0.5rem;
+            padding: var(--space-thick);
         }
 
         .modal-container {
-            z-index: 2;
+            z-index: var(--modal-z);
             grid-area: area;
 
             background-color: rgba(128, 128, 128, 0.576);
@@ -179,13 +205,29 @@
         .modal {
             height: fit-content;
             width: fit-content;
-            padding: 12px 24px 24px 24px;
+            padding: var(--space-extra-thick) calc(2 * var(--space-extra-thick)) calc(2 * var(--space-extra-thick)) calc(2 * var(--space-extra-thick));
 
             background-color: white;
 
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+        }
+
+        .modal form {
+            width: 100%;
+        }
+
+        .modal h2 {
+            margin: var(--space-thin) var(--space-thin) var(--space-extra-thick) var(--space-thin);
+
+        }
+
+        @media screen and (max-width: 600px) {
+            #jumpToDateInputLabel {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -195,35 +237,50 @@
     <div id="calendarArea">
         <div class="toolbar">
             <h2>Calendar</h2>
+            <label id="jumpToDateInputLabel">
+                🔎
+                <input type="date" id="jumpToDateInput">
+            </label>
             <label>
+                🗓
                 <input id="visibleDaysInput" type="number" max="365" min="1">
                 Visible Days
             </label>
+
         </div>
         <div id="calendarList">
 
         </div>
     </div>
     <script>
-        class Classes {
-            static SELECTED = 'selected';
-
-        }
         class Colors {
             static YELLOW = 'yellow';
             static RED = 'firebrick';
             static GREENYELLOW = 'greenyellow';
             static PINK = 'pink';
             static PURPLE = 'purple';
+            static ORCHID = 'orchid';
+            static GOLDENROD = 'goldenrod';
             static TRANSPARENT = 'transparent';
             static WEEKDAY = Colors.YELLOW;
             static WEEKEND = Colors.PURPLE;
-            static ALL = [Colors.YELLOW, Colors.GREENYELLOW, Colors.PINK, Colors.RED, Colors.PURPLE, Colors.TRANSPARENT];
+            static WARNING_BG = Colors.RED;
+            static ALL = [Colors.GOLDENROD, Colors.ORCHID, Colors.YELLOW, Colors.GREENYELLOW, Colors.PINK,
+            Colors.RED, Colors.PURPLE, Colors.TRANSPARENT].sort();
         }
 
         class IdentifierUtility {
             static generateRandomId() {
                 return Math.floor((Math.random() * 10000000000) + 1);
+            }
+        }
+
+        class Holiday {
+            static CHRISTMAS = new Holiday("Christmas", "🎄");
+            static HALLOWEEN = new Holiday("Halloween", "🎃");
+            constructor(name, icon) {
+                this.name = name;
+                this.icon = icon;
             }
         }
 
@@ -234,8 +291,22 @@
             static dateStringToDate(dateString) {
                 return new Date(dateString);
             }
+            static inputDateStringToDateString(javascriptDateString) {
+                return javascriptDateString.replaceAll('-0', '-');
+            }
             static isWeekend(date) {
                 return date.getDay() === 0 || date.getDay() === 6;
+            }
+            static getHolidays(date) {
+                const dateString = DateUtility.dateToDateString(date);
+                const holidays = [];
+                if (dateString.endsWith('12-25')) {
+                    holidays.push(Holiday.CHRISTMAS);
+                }
+                if (dateString.endsWith('10-30')) {
+                    holidays.push(Holiday.HALLOWEEN);
+                }
+                return holidays;
             }
             static getToday() {
                 return new Date();
@@ -280,6 +351,9 @@
             removeActivity(date, activityId) {
                 this.calendarEntries[date].removeActivity(activityId);
             }
+            updateActivity(entry, newActivityValue) {
+                this.calendarEntries[entry.dateString].updateActivity(newActivityValue);
+            }
             clearEntries() {
                 this.calendarEntries = {};
             }
@@ -295,7 +369,7 @@
                 }
                 for (let ce in data.calendarEntries) {
                     const original = data.calendarEntries[ce];
-                    data.calendarEntries[ce] = CalendarEntry.fromData(original);//new CalendarEntry(DateUtility.dateStringToDate(original.dateString), original.activities, original.color)
+                    data.calendarEntries[ce] = CalendarEntry.fromData(original);
                 }
                 return new State(data.daysVisible, data.calendarEntries);
             }
@@ -322,22 +396,21 @@
         }
 
         class CalendarEntryActivity {
-            constructor(text, color = Colors.TRANSPARENT) {
+            constructor(text, color = Colors.TRANSPARENT, icon = Icons.EMPTY) {
                 this.text = text;
                 this.color = color;
+                this.icon = icon;
                 this.id = IdentifierUtility.generateRandomId();
             }
             static fromData(data) {
-                return new CalendarEntryActivity(data.text, data.color);
+                return new CalendarEntryActivity(data.text, data.color, data.icon);
             }
         }
 
         class CalendarEntry {
-            constructor(date, activities = [], color = Colors.WEEKDAY) {
+            constructor(date, activities = []) {
                 this.dateString = DateUtility.dateToDateString(date);
                 this.activities = activities;
-                this.isWeekend = DateUtility.isWeekend(date);
-                this.color = color || (this.isWeekend ? Colors.WEEKEND : Colors.WEEKDAY);
             }
             addActivity(activity) {
                 this.activities.push(activity);
@@ -345,8 +418,11 @@
             removeActivity(activityId) {
                 this.activities.splice(this.activities.findIndex(activity => activity.id === activityId), 1);
             }
+            updateActivity(newActivityValue) {
+                this.activities.splice(this.activities.findIndex(activity => activity.id === newActivityValue), 1, newActivityValue);
+            }
             static fromData(data) {
-                return new CalendarEntry(DateUtility.dateStringToDate(data.dateString), data.activities.map(activity => CalendarEntryActivity.fromData(activity)), data.color);
+                return new CalendarEntry(DateUtility.dateStringToDate(data.dateString), data.activities.map(activity => CalendarEntryActivity.fromData(activity)));
             }
         }
 
@@ -376,6 +452,10 @@
                 this.#state.removeActivity(entry.dateString, activityId);
                 this.notifyAll(this.#state);
             }
+            updateActivity(entry, newActivityValue) {
+                this.#state.updateActivity(entry, newActivityValue);
+                this.notifyAll(this.#state);
+            }
         }
 
         class Modal {
@@ -393,8 +473,8 @@
 
                 this.#container.onclick = e => this.close();
             }
-            append(innerElement) {
-                this.#modal.append(innerElement);
+            append(...innerElements) {
+                this.#modal.append(...innerElements);
             }
             show() {
                 document.getElementById('app').append(this.#container);
@@ -411,16 +491,27 @@
         }
 
         class Icons {
-            static DELETE = 'X';
-            static ADD = "+";
+            static DELETE = '🗑';
+            static ADD = "➕";
+            static SCHOOL = "🏫";
+            static PLANE = "🛫";
+            static SHIP = "🛳";
+            static WEDDING = "💒";
+            static HOSPITAL = "🏥";
+            static DANCE = "💃";
+            static LIBRARY = "📚";
+            static MUSIC = "🎼";
+            static STAR = '★';
             static EMPTY = "";
+            static ALL = [Icons.EMPTY, Icons.STAR, Icons.DELETE, Icons.ADD, Icons.SCHOOL, Icons.PLANE, Icons.SHIP, Icons.WEDDING, Icons.HOSPITAL, Icons.DANCE, Icons.LIBRARY, Icons.MUSIC];
         }
 
         class ButtonFactory {
-            static createIconButton(icon) {
+            static createIconButton(icon, backgroundColor = Colors.TRANSPARENT) {
                 const buttonElement = document.createElement('button');
                 buttonElement.textContent = icon;
                 buttonElement.classList.add(...ButtonTypes.ICON);
+                buttonElement.style.backgroundColor = backgroundColor;
                 return buttonElement;
             }
             static createSubmitButton(text = 'submit', icon = Icons.EMPTY) {
@@ -431,51 +522,91 @@
             }
         }
 
-        class CalendarEntryRenderer {
+        class SelectFactory {
+            static createSelect(elementName, options, selectedOption) {
+
+                const select = document.createElement('select');
+                select.name = elementName;
+                for (let option of options) {
+                    const optionElement = document.createElement('option');
+                    optionElement.textContent = option;
+                    optionElement.selected = option === selectedOption;
+                    select.append(optionElement);
+                }
+                return select;
+            }
+        }
+
+        class CalendarEntryActivityRenderer {
             #controller;
             constructor(controller) {
                 this.#controller = controller;
             }
+            render(entry, activity) {
+                const activityContainer = document.createElement('span');
+                activityContainer.classList.add('calendar-entry__activity');
+                const iconElement = document.createElement('span');
+                iconElement.classList.add("icon")
+                iconElement.textContent = activity.icon;
+                const textElement = document.createElement('span');
+                textElement.textContent = activity.text;
+                activityContainer.append(iconElement, textElement);
+                activityContainer.style.backgroundColor = activity.color
+                const deleteActivityButton = ButtonFactory.createIconButton(Icons.DELETE);
+                deleteActivityButton.onclick = (e) => {
+                    e.stopPropagation();
+                    this.#controller.onActivityDeleted(entry, activity.id);
+                }
+                activityContainer.onclick = (e) => {
+                    e.stopPropagation();
+                    new AddEntryFormModal((newActivityValue) => {
+                        newActivityValue.id = activity.id;
+                        this.#controller.onActivityUpdated(entry, newActivityValue);
+                    }, entry.dateString, activity).show()
+                }
+                activityContainer.append(deleteActivityButton);
+                return activityContainer;
+            }
+        }
+
+        class CalendarEntryRenderer {
+            #controller;
+            #activityRenderer;
+            constructor(controller, activityRenderer) {
+                this.#controller = controller;
+                this.#activityRenderer = activityRenderer;
+            }
             render(dateString, entry) {
                 const container = document.createElement('div');
+                container.id = dateString;
                 container.classList.add('calendar-entry');
                 this.#style(container, dateString, entry);
                 const dateLabel = document.createElement('h3');
                 dateLabel.classList.add('calendar-entry__header')
-                dateLabel.innerText = this.#formatDateString(dateString);
+                dateLabel.textContent = this.#formatDateString(dateString);
                 container.append(dateLabel);
                 for (let activity of entry?.activities || []) {
-                    const activityContainer = document.createElement('span');
-                    activityContainer.classList.add('calendar-entry__activity')
-                    activityContainer.innerText = activity.text;
-                    activityContainer.style.backgroundColor = activity.color
-                    const deleteActivityButton = ButtonFactory.createIconButton(Icons.DELETE);
-                    deleteActivityButton.onclick = (e) => {
-                        e.stopPropagation();
-                        this.#controller.onActivityDeleted(entry, activity.id);
-                    }
-                    activityContainer.append(deleteActivityButton);
-                    container.append(activityContainer);
+                    container.append(this.#activityRenderer.render(entry, activity));
                 }
                 container.onclick = (e) => {
-                        new AddEntryFormModal((newEntryValue) => {
-                            this.#controller.onActivityAdded(DateUtility.dateStringToDate(dateString), newEntryValue);
-                        }, dateString).show();
-                    }
+                    new AddEntryFormModal((newEntryValue) => {
+                        this.#controller.onActivityAdded(DateUtility.dateStringToDate(dateString), newEntryValue);
+                    }, dateString).show();
+                }
                 return container;
             }
             #style(container, dateString, entry) {
-                container.style.borderColor = entry?.color ||
-                    (DateUtility.isWeekend(DateUtility.dateStringToDate(dateString)) ? Colors.WEEKEND : Colors.WEEKDAY);
+                container.style.borderColor = (DateUtility.isWeekend(DateUtility.dateStringToDate(dateString)) ? Colors.WEEKEND : Colors.WEEKDAY);
             }
             #formatDateString(dateString) {
                 const asDate = DateUtility.dateStringToDate(dateString);
-                return asDate.toLocaleDateString();
+                const holidays = DateUtility.getHolidays(asDate);
+                return `${holidays.map(h => h.icon).join('') || '🗓'} ${DayOfWeek.fromNumber(asDate.getDay()).name} ${asDate.toLocaleDateString()}`;
             }
         }
 
         class AddEntryFormModal extends Modal {
-            constructor(onAdd, dateString) {
+            constructor(onAdd, dateString, entry) {
                 super();
                 const formArea = document.createElement('div');
                 const title = document.createElement('h2');
@@ -488,50 +619,37 @@
                 textInput.required = true;
                 textInput.minLength = 1;
                 textInput.maxLength = 255;
+                textInput.value = entry?.text || ""; // set default value
                 textLabel.append(textInput);
+                const colorSelect = SelectFactory.createSelect('color', Colors.ALL, entry?.color || Colors.TRANSPARENT);
                 const colorLabel = document.createElement('label');
                 colorLabel.textContent = 'Color';
-                const colorSelect = document.createElement('select');
-                colorSelect.name = "color";
-                for (let color of Colors.ALL) {
-                    const colorOption = document.createElement('option');
-                    colorOption.textContent = color;
-                    colorOption.selected = color === Colors.TRANSPARENT;
-                    colorSelect.append(colorOption);
-                }
                 colorLabel.append(colorSelect);
-                const button = ButtonFactory.createSubmitButton("Add", Icons.ADD);
+                const iconSelect = SelectFactory.createSelect('icon', Icons.ALL, entry?.icon || Icons.EMPTY);
+                const iconLabel = document.createElement('label');
+                iconLabel.textContent = 'Icon';
+                iconLabel.append(iconSelect);
+
+                const button = ButtonFactory.createSubmitButton(Boolean(entry) ? "Update" : "Add");
                 form.onsubmit = e => {
-                    const text = textInput.value;
-                    const color = colorSelect.value;
                     super.close();
                     const data = Object.fromEntries(new FormData(event.target));
-                    onAdd(CalendarEntryActivity.fromData(data));//new CalendarEntryActivity(text, color));
+                    onAdd(CalendarEntryActivity.fromData(data));
                 };
-                form.append(textLabel, colorLabel, button);
-                formArea.append(title, form);
-                super.append(formArea);
+                form.append(textLabel, colorLabel, iconLabel, button);
+                super.append(title, form);
             }
         }
 
-        class View extends Observer {
+        class CalendarListComponent extends Observer {
             #controller;
-            #entryFormElement;
             #calendarListElement;
             #calendarEntryRenderer;
-            #visibleDaysInput;
             constructor(controller, calendarEntryRenderer) {
                 super();
                 this.#controller = controller;
                 this.#calendarEntryRenderer = calendarEntryRenderer;
-                this.#entryFormElement = document.getElementById("entryForm");
                 this.#calendarListElement = document.getElementById("calendarList");
-                this.#visibleDaysInput = document.getElementById("visibleDaysInput");
-                this.#visibleDaysInput.value = 7;
-                const visibleDaysInputListener = (e) =>
-                    this.#controller.onVisibleDaysInputUpdated(this.#visibleDaysInput.value);
-                this.#visibleDaysInput.onclick = visibleDaysInputListener;
-                this.#visibleDaysInput.onchange = visibleDaysInputListener;
             }
             onUpdate(state) {
                 let date = new Date();
@@ -540,10 +658,43 @@
                     const d = new Date(date); // clone to prevent weirdness
                     const calendarEntryElement = this.#calendarEntryRenderer.render(DateUtility.dateToDateString(date), state.calendarEntries[DateUtility.dateToDateString(date)]);
                     this.#calendarListElement.append(calendarEntryElement);
-                    
                     date.setDate(date.getDate() + 1);
-
                 }
+            }
+        }
+
+        class JumpToDaysInputComponent extends Observer {
+            #jumpToDateInput;
+            constructor() {
+                super();
+                this.#jumpToDateInput = document.getElementById("jumpToDateInput");
+                this.#jumpToDateInput.onchange = (e) => {
+                    const jumpToMe = document.getElementById(DateUtility.inputDateStringToDateString(this.#jumpToDateInput.value));
+                    if (Boolean(jumpToMe)) {
+                        jumpToMe.scrollIntoView();
+                    }
+                    else {
+                        document.getElementById("calendarList").scrollTo(0, 0)
+                    }
+                }
+            }
+        }
+
+        class VisibleDaysInputComponent extends Observer {
+            #visibleDaysInput;
+            #controller;
+            constructor(controller) {
+                super();
+                this.#controller = controller;
+                this.#visibleDaysInput = document.getElementById("visibleDaysInput");
+                this.#visibleDaysInput.value = 7;
+                const visibleDaysInputListener = (e) =>
+                    this.#controller.onVisibleDaysInputUpdated(this.#visibleDaysInput.value);
+                this.#visibleDaysInput.onclick = visibleDaysInputListener;
+                this.#visibleDaysInput.onchange = visibleDaysInputListener;
+            }
+            onUpdate(state) {
+                this.#visibleDaysInput.value = state.daysVisible;
             }
         }
 
@@ -560,6 +711,9 @@
             }
             onActivityDeleted(entry, activityId) {
                 this.#model.removeActivity(entry, activityId);
+            }
+            onActivityUpdated(entry, newActivityValue) {
+                this.#model.updateActivity(entry, newActivityValue);
             }
         }
 
@@ -596,8 +750,11 @@
             const startingState = State.fromData(storageImplementation.open()) || new State();
             const model = new Model(startingState);
             const controller = new Controller(model);
-            const view = new View(controller, new CalendarEntryRenderer(controller));
-            model.addObserver(view);
+            const calendarListComponent = new CalendarListComponent(controller, new CalendarEntryRenderer(controller, new CalendarEntryActivityRenderer(controller)));
+            const visibleDaysInput = new VisibleDaysInputComponent(controller);
+            const jumpToDateInput = new JumpToDaysInputComponent();
+            model.addObserver(visibleDaysInput);
+            model.addObserver(calendarListComponent);
             model.addObserver(storageManager);
             model.start();
         })()
