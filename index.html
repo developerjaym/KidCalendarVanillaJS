@@ -97,6 +97,10 @@
 
         .icon {
             min-width: 2rem;
+            font-size: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .button {
@@ -145,33 +149,31 @@
 
         #calendarList {
 
-            display: flex;
-            flex-direction: column;
-            row-gap: var(--space-thick);
+            display: grid;
             align-items: center;
-
+            justify-content: center;
             max-height: 100vh;
             overflow-y: scroll;
-
             padding: var(--space-thick) var(--space-thick) 15rem var(--space-thick);
+            row-gap: var(--space-thick);
 
         }
 
         .calendar-entry {
             min-height: 15rem;
-            width: 15rem;
-
+            height: 33vw;
+            max-height: 50vh;
+            min-width: 15rem;
+            width: 33vw;
             padding: var(--space-thin);
-
             background-color: yellow;
             color: black;
-
             display: flex;
             flex-direction: column;
             row-gap: var(--space-thin);
-
             border-width: var(--space-thick);
             border-style: solid;
+            overflow-y: scroll;
         }
 
         .calendar-entry__header {
@@ -491,7 +493,7 @@
         }
 
         class Icons {
-            static DELETE = '🗑';
+            static DELETE = '⌫';//'🗑';
             static ADD = "➕";
             static SCHOOL = "🏫";
             static PLANE = "🛫";
@@ -502,8 +504,9 @@
             static LIBRARY = "📚";
             static MUSIC = "🎼";
             static STAR = '★';
+            static OLD_WOMAN = '👵';
             static EMPTY = "";
-            static ALL = [Icons.EMPTY, Icons.STAR, Icons.DELETE, Icons.ADD, Icons.SCHOOL, Icons.PLANE, Icons.SHIP, Icons.WEDDING, Icons.HOSPITAL, Icons.DANCE, Icons.LIBRARY, Icons.MUSIC];
+            static ALL = [Icons.EMPTY, Icons.OLD_WOMAN, Icons.STAR, Icons.DELETE, Icons.ADD, Icons.SCHOOL, Icons.PLANE, Icons.SHIP, Icons.WEDDING, Icons.HOSPITAL, Icons.DANCE, Icons.LIBRARY, Icons.MUSIC];
         }
 
         class ButtonFactory {
