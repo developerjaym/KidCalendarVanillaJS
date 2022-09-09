@@ -362,6 +362,15 @@
             setDaysVisible(newValue) {
                 this.daysVisible = newValue;
             }
+            deleteBefore(date) {
+                const keys = Object.keys(this.calendarEntries);
+                const dateString = DateUtility.dateToDateString(date);
+                for(let key of keys) {
+                    if(DateUtility.dateStringToDate(key) < date) {
+                        delete this.calendarEntries[key];
+                    }
+                }
+            }
             asData() {
                 return JSON.parse(JSON.stringify(this));
             }
@@ -435,6 +444,7 @@
                 this.#state = state;
             }
             start() {
+                this.#deleteEarlierEntries();
                 this.notifyAll(this.#state);
             }
             setDaysVisible(newDaysVisible) {
@@ -457,6 +467,13 @@
             updateActivity(entry, newActivityValue) {
                 this.#state.updateActivity(entry, newActivityValue);
                 this.notifyAll(this.#state);
+            }
+            #deleteEarlierEntries() {
+                // I don't need to display anything from before today, so let's save space
+                const today = DateUtility.getToday();
+                const deleteBefore = today
+                deleteBefore.setDate(today.getDate()-1);
+                this.#state.deleteBefore(deleteBefore);
             }
         }
 
