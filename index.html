@@ -15,6 +15,8 @@
             --border-radius: 1rem;
             --modal-z: 2;
             --standard-z: 1;
+            --animation-short: 444ms;
+            --animation-long: 1111ms;
         }
 
         * {
@@ -144,6 +146,7 @@
             z-index: var(--standard-z);
 
             max-height: 100vh;
+            height: 100vh;
             overflow-y: clip;
         }
 
@@ -163,7 +166,7 @@
             min-height: 15rem;
             height: 33vw;
             max-height: 50vh;
-            min-width: 15rem;
+            min-width: 20rem;
             width: 33vw;
             padding: var(--space-thin);
             background-color: yellow;
@@ -215,6 +218,8 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+
+            
         }
 
         .modal form {
@@ -226,9 +231,53 @@
 
         }
 
+        .disappear-short {
+            animation-name: disappear;
+            animation-duration: var(--animation-short);
+            animation-fill-mode: forwards;
+        }
+
+        .disappear-long {
+            animation-name: disappear;
+            animation-duration: var(--animation-long);
+            animation-fill-mode: forwards;
+        }
+
+        .appear-short {
+            animation-name: appear;
+            animation-duration: var(--animation-short);
+            animation-fill-mode: forwards;
+        }
+
+        .appear-long {
+            animation-name: appear;
+            animation-duration: var(--animation-long);
+            animation-fill-mode: forwards;
+        }
+
         @media screen and (max-width: 600px) {
             #jumpToDateInputLabel {
                 display: none;
+            }
+        }
+
+        @keyframes disappear {
+            0% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        @keyframes appear {
+            0% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
             }
         }
     </style>
@@ -255,6 +304,35 @@
         </div>
     </div>
     <script>
+
+        class AnimationDuration {
+            static SHORT = 444;
+            static LONG = 1111;
+        }
+        class AnimationClasses {
+            static DISAPPEAR_SHORT = "disappear-short";
+            static APPEAR_SHORT = "appear-short";
+        }
+        class CalendarAnimation {
+            static DISAPPEAR = new CalendarAnimation(AnimationClasses.DISAPPEAR_SHORT, AnimationDuration.SHORT);
+            static APPEAR = new CalendarAnimation(AnimationClasses.APPEAR_SHORT, AnimationDuration.SHORT);
+            constructor(className, time) {
+                this.className = className;
+                this.time = time;
+            }
+            static createDisappearingAnimation(element) {
+                const animation = CalendarAnimation.DISAPPEAR;
+                element.classList.remove(CalendarAnimation.APPEAR.className);
+                element.classList.add(animation.className);
+                window.setTimeout(() => element.remove(), animation.time);
+            }
+            static createAppearingAnimation(element) {
+                // element.classList.remove(CalendarAnimation.DISAPPEAR.className);
+                const animation = CalendarAnimation.APPEAR;
+                element.classList.add(animation.className);
+            }
+        }
+
         class Colors {
             static YELLOW = 'yellow';
             static RED = 'firebrick';
@@ -360,13 +438,13 @@
                 this.calendarEntries = {};
             }
             setDaysVisible(newValue) {
-                this.daysVisible = newValue;
+                this.daysVisible = Number(newValue);
             }
             deleteBefore(date) {
                 const keys = Object.keys(this.calendarEntries);
                 const dateString = DateUtility.dateToDateString(date);
-                for(let key of keys) {
-                    if(DateUtility.dateStringToDate(key) < date) {
+                for (let key of keys) {
+                    if (DateUtility.dateStringToDate(key) < date) {
                         delete this.calendarEntries[key];
                     }
                 }
@@ -472,7 +550,7 @@
                 // I don't need to display anything from before today, so let's save space
                 const today = DateUtility.getToday();
                 const deleteBefore = today
-                deleteBefore.setDate(today.getDate()-1);
+                deleteBefore.setDate(today.getDate() - 1);
                 this.#state.deleteBefore(deleteBefore);
             }
         }
@@ -497,9 +575,14 @@
             }
             show() {
                 document.getElementById('app').append(this.#container);
+                CalendarAnimation.createAppearingAnimation(this.#container);
+                // this.#container.classList.add(CalendarAnimation.APPEAR.className);
             }
             close() {
-                this.#container.remove();
+                CalendarAnimation.createDisappearingAnimation(this.#container);
+                // this.#container.classList.remove(CalendarAnimation.APPEAR.className);
+                // this.#container.classList.add(CalendarAnimation.DISAPPEAR.className);
+                // window.setTimeout(() => this.#container.remove(), CalendarAnimation.DISAPPEAR.time);
             }
         }
 
@@ -652,9 +735,10 @@
 
                 const button = ButtonFactory.createSubmitButton(Boolean(entry) ? "Update" : "Add");
                 form.onsubmit = e => {
-                    super.close();
+                    e.preventDefault(); // so it doesn't try to submit the form
                     const data = Object.fromEntries(new FormData(event.target));
                     onAdd(CalendarEntryActivity.fromData(data));
+                    super.close();
                 };
                 form.append(textLabel, colorLabel, iconLabel, button);
                 super.append(title, form);
@@ -665,21 +749,31 @@
             #controller;
             #calendarListElement;
             #calendarEntryRenderer;
+            #tracked;
             constructor(controller, calendarEntryRenderer) {
                 super();
                 this.#controller = controller;
                 this.#calendarEntryRenderer = calendarEntryRenderer;
                 this.#calendarListElement = document.getElementById("calendarList");
+                this.#tracked = {
+                    calendarEntries: []
+                };
             }
             onUpdate(state) {
                 let date = new Date();
+                let thisLoad = [];
                 this.#calendarListElement.textContent = ''; // remove all children
                 for (let i = 0; i < state.daysVisible; i++) {
                     const d = new Date(date); // clone to prevent weirdness
                     const calendarEntryElement = this.#calendarEntryRenderer.render(DateUtility.dateToDateString(date), state.calendarEntries[DateUtility.dateToDateString(date)]);
                     this.#calendarListElement.append(calendarEntryElement);
+                    if(!this.#tracked.calendarEntries.includes(DateUtility.dateToDateString(date))) {
+                        CalendarAnimation.createAppearingAnimation(calendarEntryElement);
+                    }
+                    thisLoad.push(DateUtility.dateToDateString(date))
                     date.setDate(date.getDate() + 1);
                 }
+                this.#tracked.calendarEntries = thisLoad;
             }
         }
 
@@ -710,7 +804,6 @@
                 this.#visibleDaysInput.value = 7;
                 const visibleDaysInputListener = (e) =>
                     this.#controller.onVisibleDaysInputUpdated(this.#visibleDaysInput.value);
-                this.#visibleDaysInput.onclick = visibleDaysInputListener;
                 this.#visibleDaysInput.onchange = visibleDaysInputListener;
             }
             onUpdate(state) {
@@ -764,7 +857,7 @@
             }
         }
 
-        (() => {
+        (async () => {
             const storageImplementation = new LocalStorageService();
             const storageManager = new StorageManager(storageImplementation);
             const startingState = State.fromData(storageImplementation.open()) || new State();
