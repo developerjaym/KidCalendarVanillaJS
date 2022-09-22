@@ -1,0 +1,281 @@
+:root {
+    --border-width: 1px;
+    --space-thin: 0.25rem;
+    --space-thick: 0.5rem;
+    --space-extra-thick: 1rem;
+    --border-radius: 1rem;
+    --modal-z: 2;
+    --standard-z: 1;
+    --animation-short: 444ms;
+    --animation-long: 1111ms;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    font-family: sans-serif;
+    background-color: gainsboro;
+}
+
+#app {
+    display: grid;
+    grid-template-areas: 'area';
+    margin: 0;
+
+    grid-area: area;
+    z-index: var(--standard-z);
+    max-height: 100vh;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--space-thick);
+}
+
+form label {
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--space-thin);
+}
+
+input,
+select,
+.calendar-entry__activity {
+    font-family: 'Courier New', Courier, monospace;
+}
+
+input,
+select {
+    border-width: 0 0 var(--border-width) 0;
+    border-style: solid;
+    border-color: black;
+
+    padding: var(--space-thick);
+}
+
+.toolbar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: var(--space-thick);
+
+    background-color: lightgray;
+    color: black;
+
+    border-width: 0 0 var(--border-width) 0;
+    border-style: solid;
+    border-color: black;
+
+}
+
+h2 {
+    background-color: firebrick;
+    color: rgba(255, 255, 255, 0.66);
+    padding: var(--space-thick);
+    margin: var(--space-thin);
+    font-family: 'Courier New', Courier, monospace;
+    text-shadow: 1px 2px 12px black;
+    font-weight: normal;
+    transform: rotate(-1.5deg);
+}
+
+select {
+    text-transform: capitalize;
+}
+
+.icon {
+    min-width: 2rem;
+    font-size: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.button {
+    border-width: var(--border-width);
+    border-color: transparent;
+    border-style: solid;
+
+    text-transform: uppercase;
+}
+
+.button:active {
+    border-color: black;
+    border-width: var(--border-width);
+    border-style: solid;
+}
+
+.button:hover {
+    border-color: black;
+    border-width: var(--border-width);
+    border-style: dotted;
+}
+
+.button-icon {
+    background-color: transparent;
+    color: black;
+    border-radius: var(--border-radius);
+}
+
+.button-submit {
+    background-color: lightgreen;
+    padding: var(--space-thick);
+}
+
+form:invalid .button-submit {
+    background-color: rgba(144, 238, 144, 0.15);
+    color: rgba(0, 0, 0, 0.15);
+}
+
+#calendarArea {
+    grid-area: area;
+    z-index: var(--standard-z);
+
+    max-height: 100vh;
+    height: 100vh;
+    overflow-y: clip;
+}
+
+#calendarList {
+
+    display: grid;
+    align-items: center;
+    justify-content: center;
+    max-height: 100vh;
+    overflow-y: scroll;
+    padding: var(--space-thick) var(--space-thick) 15rem var(--space-thick);
+    row-gap: var(--space-thick);
+
+}
+
+.calendar-entry {
+    min-height: 15rem;
+    height: 33vw;
+    max-height: 50vh;
+    min-width: 20rem;
+    width: 33vw;
+    padding: var(--space-thin);
+    background-color: yellow;
+    color: black;
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--space-thin);
+    border-width: var(--space-thick);
+    border-style: solid;
+    overflow-y: scroll;
+}
+
+.calendar-entry__header {
+    margin: var(--space-thin);
+}
+
+.calendar-entry__activity {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    border: none;
+
+    padding: var(--space-thick);
+}
+
+.modal-container {
+    z-index: var(--modal-z);
+    grid-area: area;
+
+    background-color: rgba(128, 128, 128, 0.576);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    height: 100%;
+    width: 100%;
+}
+
+.modal {
+    height: fit-content;
+    width: fit-content;
+    padding: var(--space-extra-thick) calc(2 * var(--space-extra-thick)) calc(2 * var(--space-extra-thick)) calc(2 * var(--space-extra-thick));
+
+    background-color: white;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+
+}
+
+.loading {
+    font-size: xx-large;
+}
+
+.modal form {
+    width: 100%;
+}
+
+.modal h2 {
+    margin: var(--space-thin) var(--space-thin) var(--space-extra-thick) var(--space-thin);
+
+}
+
+.disappear-short {
+    animation-name: disappear;
+    animation-duration: var(--animation-short);
+    animation-fill-mode: forwards;
+}
+
+.disappear-long {
+    animation-name: disappear;
+    animation-duration: var(--animation-long);
+    animation-fill-mode: forwards;
+}
+
+.appear-short {
+    animation-name: appear;
+    animation-duration: var(--animation-short);
+    animation-fill-mode: forwards;
+}
+
+.appear-long {
+    animation-name: appear;
+    animation-duration: var(--animation-long);
+    animation-fill-mode: forwards;
+}
+
+@media screen and (max-width: 600px) {
+    #jumpToDateInputLabel {
+        display: none;
+    }
+}
+
+@keyframes disappear {
+    0% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateX(100vw);
+        opacity: 0;
+    }
+}
+
+@keyframes appear {
+    0% {
+        transform: translateX(-100vw);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

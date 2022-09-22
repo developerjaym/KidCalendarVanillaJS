@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link async rel="icon" type="image/x-icon" href="http://res.publicdomainfiles.com/pdf_view/70/13929661216596.png">
+    <link rel="stylesheet" href="./calendar.css" />
+    <script src="./utility.js"></script>
+    <script src="./ui.js"></script>
+    <script src="./calendar.js"></script>
+    <script src="./environment.js"></script>
+    <title>KidCalendar</title>
+</head>
+
+<body id="app">
+    <div id="calendarArea">
+        <div class="toolbar">
+            <h2>Calendar</h2>
+            <label id="jumpToDateInputLabel">
+                🔎
+                <input type="date" id="jumpToDateInput">
+            </label>
+            <label>
+                🗓
+                <input id="visibleDaysInput" type="number" max="365" min="1">
+                Visible Days
+            </label>
+
+        </div>
+        <div id="calendarList">
+            <span class="loading">⏳</span>
+        </div>
+    </div>
+    <script>
+
+        (async () => {
+            const storageImplementation = new RemoteStorageService(Environment.DEV);
+            const storageManager = new StorageManager(storageImplementation);
+            try {
+                const existing = await storageImplementation.open();
+                const startingState = State.fromData(existing) || new State();
+                const model = new Model(startingState);
+                const controller = new Controller(model);
+                const calendarListComponent = new CalendarListComponent(controller, new CalendarEntryRenderer(controller, new CalendarEntryActivityRenderer(controller)));
+                const visibleDaysInput = new VisibleDaysInputComponent(controller);
+                const jumpToDateInput = new JumpToDaysInputComponent();
+                model.addObserver(visibleDaysInput);
+                model.addObserver(calendarListComponent);
+                model.addObserver(storageManager);
+                model.start();
+            }
+            catch (e) {
+                window.location.href = "index.html"; // redirect for authentication
+            }
+        })()
+
+    </script>
+</body>
+
+</html>
