@@ -31,7 +31,7 @@ class ButtonTypes {
     static SUBMIT = ['button', 'button-submit'];
 }
 class Icons {
-    static DELETE = '⌫';//'🗑';
+    static DELETE = '⌫';
     static ADD = "➕";
     static SCHOOL = "🏫";
     static PLANE = "🛫";
