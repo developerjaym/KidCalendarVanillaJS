@@ -147,7 +147,7 @@ form:invalid .button-submit {
     align-items: center;
     justify-content: center;
     max-height: 100vh;
-    overflow-y: scroll;
+    overflow-y: auto;
     padding: var(--space-thick) var(--space-thick) 15rem var(--space-thick);
     row-gap: var(--space-thick);
 
