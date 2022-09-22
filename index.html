@@ -5,35 +5,67 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link async rel="icon" type="image/x-icon" href="https://localstorage.tools/old-fashioned/old-fashioned.png">
+
+    <meta name="keywords" content="calendar, kids, to-do list, organizer">
+    <meta name="author" content="Jay M">
+    <meta name="Description" content="This work-in-progress app is to help small children keep track of their schedule for each day using a single column of 'sticky notes' for each day and convenient icons for each activity.">
+    <meta property="og:image" content="./favicon.png">
+    <meta property="og:image:width" content="512">
+    <meta properly="og:image:height" content="512">
+    <meta property="og:url" content="https://localstorage.tools/calendar/">
+    <meta property="og:description" content="This work-in-progress app is to help small children keep track of their schedule for each day using a single column of 'sticky notes' for each day and convenient icons for each activity.">
+    <meta property="og:type" content="Website">
+    <meta property="og:title" content="KidCalendar">
+
+    <link async rel="icon" type="image/x-icon" href="./favicon.png">
     <link rel="stylesheet" href="./calendar.css" />
     <script src="./utility.js"></script>
     <script src="./ui.js"></script>
-    <script src="./authentication.js"></script>
+    <script src="./calendar.js"></script>
     <script src="./environment.js"></script>
-    <title>KidCalendar</title>
+    <title>KidCalendar: Calendar</title>
 </head>
 
 <body id="app">
     <div id="calendarArea">
         <div class="toolbar">
             <h2>Calendar</h2>
-            <button class="button" id="signInButton">Sign In</button>
-            <button class="button" id="signUpButton">Sign Up</button>
+            <label id="jumpToDateInputLabel">
+                🔎
+                <input type="date" id="jumpToDateInput">
+            </label>
+            <label>
+                🗓
+                <input id="visibleDaysInput" type="number" max="365" min="1">
+                Visible Days
+            </label>
 
+        </div>
+        <div id="calendarList">
+            <span class="loading">⏳</span>
         </div>
     </div>
     <script>
-        
+
         (async () => {
-            const authService = new AuthenticationService(Environment.DEV);
-            const model = new AuthenticationModel(authService);
-            const controller = new AuthenticationController(model);
-            const view = new AuthenticationView(controller);
-            const redirecter = new Redirecter();
-            model.addObserver(view);
-            model.addObserver(redirecter);
-            model.start();
+            const storageImplementation = new RemoteStorageService(Environment.DEV);
+            const storageManager = new StorageManager(storageImplementation);
+            try {
+                const existing = await storageImplementation.open();
+                const startingState = State.fromData(existing) || new State();
+                const model = new Model(startingState);
+                const controller = new Controller(model);
+                const calendarListComponent = new CalendarListComponent(controller, new CalendarEntryRenderer(controller, new CalendarEntryActivityRenderer(controller)));
+                const visibleDaysInput = new VisibleDaysInputComponent(controller);
+                const jumpToDateInput = new JumpToDaysInputComponent();
+                model.addObserver(visibleDaysInput);
+                model.addObserver(calendarListComponent);
+                model.addObserver(storageManager);
+                model.start();
+            }
+            catch (e) {
+                window.location.href = "authentication.html"; // redirect for authentication
+            }
         })()
 
     </script>

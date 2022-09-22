@@ -126,7 +126,7 @@ class AuthenticationView extends Observer {
 class Redirecter extends Observer {
     onUpdate(state) {
         if (state.authenticated && !state.error) {
-            window.location.href = "calendar.html";
+            window.location.href = "index.html";
         }
     }
 }
