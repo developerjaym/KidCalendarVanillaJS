@@ -143,7 +143,7 @@ class CalendarEntry {
   }
   updateActivity(newActivityValue) {
     this.activities.splice(
-      this.activities.findIndex((activity) => activity.id === newActivityValue),
+      this.activities.findIndex((activity) => activity.id === newActivityValue.id),
       1,
       newActivityValue
     );
@@ -296,7 +296,7 @@ class AddEntryFormModal extends Modal {
     textInput.name = "text";
     textInput.required = true;
     textInput.minLength = 1;
-    textInput.maxLength = 255;
+    textInput.maxLength = 20;
     textInput.value = entry?.text || ""; // set default value
     textLabel.append(textInput);
     const colorSelect = SelectFactory.createSelect(
