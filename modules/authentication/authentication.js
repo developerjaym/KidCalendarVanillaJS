@@ -1,3 +1,6 @@
+import { Observable, Observer, AbstractState } from "../common/utility.js";
+import {ButtonFactory, ErrorModal, Modal} from "../common/ui.js";
+
 class AuthenticationService {
   #environment;
   constructor(environment) {
@@ -136,41 +139,42 @@ class AuthenticationFormModal extends Modal {
         super();
         const formArea = document.createElement("div");
         const title = document.createElement("h2");
-        title.textContent =
-            isRegister ? "Sign Up" : "Sign In";
+        title.textContent = isRegister ? "Sign Up" : "Sign In";
         const form = document.createElement("form");
         const usernameLabel = document.createElement("label");
         usernameLabel.textContent = "Username";
         const usernameInput = document.createElement("input");
+        usernameInput.autocomplete = "username";
         usernameInput.name = "username";
         usernameInput.required = true;
         usernameInput.minLength = 1;
         usernameInput.maxLength = 255;
         usernameLabel.append(usernameInput);
-
+    
         const passwordLabel = document.createElement("label");
         passwordLabel.textContent = "Password";
         const passwordInput = document.createElement("input");
-        passwordInput.type = "password"
+        passwordInput.autocomplete = isRegister ? "new-password" : "current-password";
+        passwordInput.type = "password";
         passwordInput.name = "password";
         passwordInput.required = true;
         passwordInput.minLength = 1;
         passwordInput.maxLength = 255;
         passwordLabel.append(passwordInput);
-
+    
         const button = ButtonFactory.createSubmitButton(
-            isRegister ? "Sign Up" : "Sign In"
+          isRegister ? "Sign Up" : "Sign In"
         );
         form.onsubmit = (e) => {
-            e.preventDefault(); // so it doesn't try to submit the form
-            const data = Object.fromEntries(new FormData(event.target));
-            onSubmit(data);
-
-            super.close();
+          e.preventDefault(); // so it doesn't try to submit the form
+          const data = Object.fromEntries(new FormData(event.target));
+          onSubmit(data);
+    
+          super.close();
         };
         form.append(usernameLabel, passwordLabel, button);
         super.append(title, form);
-    }
+      }
 }
 
 class AuthenticationState extends AbstractState {
@@ -180,5 +184,13 @@ class AuthenticationState extends AbstractState {
         this.error = false;
     }
 }
+
+export {
+    AuthenticationService,
+    AuthenticationModel,
+    AuthenticationController,
+    AuthenticationView,
+    Redirecter,
+  };
 
 

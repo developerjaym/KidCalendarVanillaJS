@@ -17,13 +17,10 @@
     <meta property="og:type" content="Website">
     <meta property="og:title" content="KidCalendar">
 
-    <link async rel="icon" type="image/x-icon" href="./favicon.png">
-    <link rel="stylesheet" href="./calendar.css" />
-    <script src="./utility.js"></script>
-    <script src="./ui.js"></script>
-    <script src="./authentication.js"></script>
-    <script src="./environment.js"></script>
+    <link async rel="icon" type="image/x-icon" href="./assets/favicon.png">
+    <link rel="stylesheet" href="./styles/styles.css" />
     <title>KidCalendar: Sign Up</title>
+    <script src="main-authentication.js" type="module"></script>
 </head>
 
 <body id="app">
@@ -35,20 +32,6 @@
 
         </div>
     </div>
-    <script>
-
-        (async () => {
-            const authService = new AuthenticationService(Environment.DEV);
-            const model = new AuthenticationModel(authService);
-            const controller = new AuthenticationController(model);
-            const view = new AuthenticationView(controller);
-            const redirecter = new Redirecter();
-            model.addObserver(view);
-            model.addObserver(redirecter);
-            model.start();
-        })()
-
-    </script>
 </body>
 
 </html>

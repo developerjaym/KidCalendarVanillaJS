@@ -1,3 +1,6 @@
+import { Observable, Observer, AbstractState, IdentifierUtility } from "../common/utility.js";
+import {ButtonFactory, Colors, ErrorModal, Modal, UIAnimation, SelectFactory, Icons} from "../common/ui.js";
+
 class Holiday {
   static CHRISTMAS = new Holiday("Christmas", "🎄");
   static HALLOWEEN = new Holiday("Halloween", "🎃");
@@ -426,7 +429,10 @@ class Controller {
 
 class LocalStorageService {
   static #CALENDAR_DATA_KEY = "kid_calendar";
-  constructor() {}
+  #environment;
+  constructor(environment) {
+    this.#environment = environment;
+  }
   save(data) {
     localStorage.setItem(
       LocalStorageService.#CALENDAR_DATA_KEY,
@@ -503,3 +509,5 @@ class StorageManager {
     this.implementation.save(state);
   }
 }
+
+export {StorageManager, RemoteStorageService, LocalStorageService, Controller, State, Model, CalendarListComponent, VisibleDaysInputComponent, CalendarEntryRenderer, CalendarEntryActivityRenderer, JumpToDaysInputComponent}

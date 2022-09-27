@@ -30,3 +30,5 @@ class Observable {
         this.#observers.forEach(observer => observer.onUpdate(state.asData()));
     }
 }
+
+export {IdentifierUtility, Observer, AbstractState, Observable}
