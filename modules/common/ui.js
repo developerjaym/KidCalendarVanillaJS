@@ -36,15 +36,19 @@ class Icons {
     static SCHOOL = "🏫";
     static PLANE = "🛫";
     static SHIP = "🛳";
-    static WEDDING = "💒";
+    static WEDDING = "⛪";
     static HOSPITAL = "🏥";
     static DANCE = "💃";
     static LIBRARY = "📚";
     static MUSIC = "🎼";
     static STAR = '★';
     static OLD_WOMAN = '👵';
+    static HAMBURGER = '🍔';
+    static BAGEL = '🥯';
+    static CITY = '🏙';
+    static CAR = '🚗';
     static EMPTY = "";
-    static ALL = [Icons.EMPTY, Icons.OLD_WOMAN, Icons.STAR, Icons.DELETE, Icons.ADD, Icons.SCHOOL, Icons.PLANE, Icons.SHIP, Icons.WEDDING, Icons.HOSPITAL, Icons.DANCE, Icons.LIBRARY, Icons.MUSIC];
+    static ALL = [Icons.EMPTY, Icons.STAR, Icons.DELETE, Icons.ADD, Icons.BAGEL, Icons.HAMBURGER, Icons.OLD_WOMAN, Icons.SCHOOL, Icons.PLANE, Icons.SHIP, Icons.CAR, Icons.CITY, Icons.WEDDING, Icons.HOSPITAL, Icons.DANCE, Icons.LIBRARY, Icons.MUSIC];
 }
 
 class ButtonFactory {
