@@ -1,43 +1,21 @@
-import { Observable, Observer, AbstractState, IdentifierUtility } from "../common/utility.js";
-import {ButtonFactory, Colors, ErrorModal, Modal, UIAnimation, SelectFactory, Icons} from "../common/ui.js";
+import {
+  Observable,
+  Observer,
+  AbstractState,
+  IdentifierUtility,
+} from "../common/utility.js";
+import {
+  ButtonFactory,
+  Colors,
+  ErrorModal,
+  Modal,
+  UIAnimation,
+  SelectFactory,
+  Icons,
+} from "../common/ui.js";
+import {LocalDate, HolidayUtility} from "./LocalDate.js";
 
-class Holiday {
-  static CHRISTMAS = new Holiday("Christmas", "🎄");
-  static HALLOWEEN = new Holiday("Halloween", "🎃");
-  constructor(name, icon) {
-    this.name = name;
-    this.icon = icon;
-  }
-}
 
-class DateUtility {
-  static dateToDateString(date) {
-    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-  }
-  static dateStringToDate(dateString) {
-    return new Date(dateString.replaceAll('-', '/'));
-  }
-  static inputDateStringToDateString(javascriptDateString) {
-    return javascriptDateString.replaceAll("-0", "-");
-  }
-  static isWeekend(date) {
-    return date.getDay() === 0 || date.getDay() === 6;
-  }
-  static getHolidays(date) {
-    const dateString = DateUtility.dateToDateString(date);
-    const holidays = [];
-    if (dateString.endsWith("12-25")) {
-      holidays.push(Holiday.CHRISTMAS);
-    }
-    if (dateString.endsWith("10-31")) {
-      holidays.push(Holiday.HALLOWEEN);
-    }
-    return holidays;
-  }
-  static getToday() {
-    return new Date();
-  }
-}
 
 class State extends AbstractState {
   constructor(daysVisible = 7, calendarEntries = {}) {
@@ -66,11 +44,10 @@ class State extends AbstractState {
   setDaysVisible(newValue) {
     this.daysVisible = Number(newValue);
   }
-  deleteBefore(date) {
+  deleteBefore(localDate) {
     const keys = Object.keys(this.calendarEntries);
-    const dateString = DateUtility.dateToDateString(date);
     for (let key of keys) {
-      if (DateUtility.dateStringToDate(key) < date) {
+      if(localDate.isGreaterThan(LocalDate.fromISOString(key)))  {
         delete this.calendarEntries[key];
       }
     }
@@ -90,34 +67,6 @@ class State extends AbstractState {
   }
 }
 
-class DayOfWeek {
-  static SUNDAY = new DayOfWeek("Sunday", "Sun.", true, 0);
-  static MONDAY = new DayOfWeek("Monday", "Mon.", false, 1);
-  static TUESDAY = new DayOfWeek("Tuesday", "Tues.", false, 2);
-  static WEDNESDAY = new DayOfWeek("Wednesday", "Wed.", false, 3);
-  static THURSDAY = new DayOfWeek("Thursday", "Thu.", false, 4);
-  static FRIDAY = new DayOfWeek("Friday", "Fri.", false, 5);
-  static SATURDAY = new DayOfWeek("Saturday", "Sat.", true, 6);
-  static #allDays = [
-    DayOfWeek.SUNDAY,
-    DayOfWeek.MONDAY,
-    DayOfWeek.TUESDAY,
-    DayOfWeek.WEDNESDAY,
-    DayOfWeek.THURSDAY,
-    DayOfWeek.FRIDAY,
-    DayOfWeek.SATURDAY,
-  ];
-  constructor(name, shortName, isWeekend, number) {
-    this.name = name;
-    this.shortName = shortName;
-    this.isWeekend = isWeekend;
-    this.number = number;
-  }
-  static fromNumber(number) {
-    return DayOfWeek.#allDays.find((day) => day.number === number);
-  }
-}
-
 class CalendarEntryActivity {
   constructor(text, color = Colors.TRANSPARENT, icon = Icons.EMPTY) {
     this.text = text;
@@ -131,8 +80,8 @@ class CalendarEntryActivity {
 }
 
 class CalendarEntry {
-  constructor(date, activities = []) {
-    this.dateString = DateUtility.dateToDateString(date);
+  constructor(localDate, activities = []) {
+    this.dateString = localDate.toISOString();
     this.activities = activities;
   }
   addActivity(activity) {
@@ -146,14 +95,16 @@ class CalendarEntry {
   }
   updateActivity(newActivityValue) {
     this.activities.splice(
-      this.activities.findIndex((activity) => activity.id === newActivityValue.id),
+      this.activities.findIndex(
+        (activity) => activity.id === newActivityValue.id
+      ),
       1,
       newActivityValue
     );
   }
   static fromData(data) {
     return new CalendarEntry(
-      DateUtility.dateStringToDate(data.dateString),
+      LocalDate.fromISOString(data.dateString),
       data.activities.map((activity) =>
         CalendarEntryActivity.fromData(activity)
       )
@@ -176,13 +127,13 @@ class Model extends Observable {
     this.notifyAll(this.#state);
   }
   addActivity(date, newActivity) {
-    if (!this.#state.contains(DateUtility.dateToDateString(date))) {
+    if (!this.#state.contains(date.toISOString())) {
       this.#state.add(
-        DateUtility.dateToDateString(date),
+        date.toISOString(),
         new CalendarEntry(date, [newActivity])
       );
     } else {
-      this.#state.addActivity(DateUtility.dateToDateString(date), newActivity);
+      this.#state.addActivity(date.toISOString(), newActivity);
     }
     this.notifyAll(this.#state);
   }
@@ -196,10 +147,7 @@ class Model extends Observable {
   }
   #deleteEarlierEntries() {
     // I don't need to display anything from before today, so let's save space
-    const today = DateUtility.getToday();
-    const deleteBefore = today;
-    deleteBefore.setDate(today.getDate() - 1);
-    this.#state.deleteBefore(deleteBefore);
+    this.#state.deleteBefore(LocalDate.today().prior());
   }
 }
 
@@ -261,7 +209,7 @@ class CalendarEntryRenderer {
     container.onclick = (e) => {
       new AddEntryFormModal((newEntryValue) => {
         this.#controller.onActivityAdded(
-          DateUtility.dateStringToDate(dateString),
+          LocalDate.fromISOString(dateString),
           newEntryValue
         );
       }, dateString).show();
@@ -269,18 +217,17 @@ class CalendarEntryRenderer {
     return container;
   }
   #style(container, dateString, entry) {
-    container.style.borderColor = DateUtility.isWeekend(
-      DateUtility.dateStringToDate(dateString)
-    )
+    container.style.borderColor = 
+      LocalDate.fromISOString(dateString).isWeekend()
       ? Colors.WEEKEND
       : Colors.WEEKDAY;
   }
   #formatDateString(dateString) {
-    const asDate = DateUtility.dateStringToDate(dateString);
-    const holidays = DateUtility.getHolidays(asDate);
+    const asDate = LocalDate.fromISOString(dateString);
+    const holidays = HolidayUtility.getHolidays(asDate);
     return `${holidays.map((h) => h.icon).join("") || "🗓"} ${
-      DayOfWeek.fromNumber(asDate.getDay()).name
-    } ${asDate.toLocaleDateString()}`;
+      asDate.getDayOfWeek().name
+    } ${asDate.toLocaleString()}`;
   }
 }
 
@@ -291,7 +238,7 @@ class AddEntryFormModal extends Modal {
     const title = document.createElement("h2");
     title.textContent =
       "Activity for " +
-      DateUtility.dateStringToDate(dateString).toLocaleDateString();
+      LocalDate.fromISOString(dateString).toLocaleString();
     const form = document.createElement("form");
     const textLabel = document.createElement("label");
     textLabel.textContent = "Activity";
@@ -348,26 +295,22 @@ class CalendarListComponent extends Observer {
     };
   }
   onUpdate(state) {
-    let date = new Date();
+    let date =  LocalDate.today();
     let thisLoad = [];
     this.#calendarListElement.textContent = ""; // remove all children
     for (let i = 0; i < state.daysVisible; i++) {
-      const d = new Date(date); // clone to prevent weirdness
-      const dateAsString = DateUtility.dateToDateString(d);
+      const d = date.clone(); // clone to prevent weirdness
+      const dateAsString = d.toISOString();
       const calendarEntryElement = this.#calendarEntryRenderer.render(
         dateAsString,
         state.calendarEntries[dateAsString]
       );
       this.#calendarListElement.append(calendarEntryElement);
-      if (
-        !this.#tracked.calendarEntries.includes(
-          dateAsString
-        )
-      ) {
+      if (!this.#tracked.calendarEntries.includes(dateAsString)) {
         UIAnimation.createAppearingAnimation(calendarEntryElement);
       }
       thisLoad.push(dateAsString);
-      date.setDate(d.getDate() + 1);
+      date = d.next();
     }
     this.#tracked.calendarEntries = thisLoad;
   }
@@ -379,8 +322,9 @@ class JumpToDaysInputComponent extends Observer {
     super();
     this.#jumpToDateInput = document.getElementById("jumpToDateInput");
     this.#jumpToDateInput.onchange = (e) => {
+      console.log(this.#jumpToDateInput.value);
       const jumpToMe = document.getElementById(
-        DateUtility.inputDateStringToDateString(this.#jumpToDateInput.value)
+        this.#jumpToDateInput.value
       );
       if (Boolean(jumpToMe)) {
         jumpToMe.scrollIntoView();
@@ -474,7 +418,7 @@ class RemoteStorageService {
     return localStorage.getItem(this.#environment.tokenKey);
   }
   #getUsername() {
-    return JSON.parse(atob(this.#getToken().split('.')[1])).sub
+    return JSON.parse(atob(this.#getToken().split(".")[1])).sub;
   }
   #getGetRequestOptions() {
     const myHeaders = new Headers();
@@ -510,4 +454,16 @@ class StorageManager {
   }
 }
 
-export {StorageManager, RemoteStorageService, LocalStorageService, Controller, State, Model, CalendarListComponent, VisibleDaysInputComponent, CalendarEntryRenderer, CalendarEntryActivityRenderer, JumpToDaysInputComponent}
+export {
+  StorageManager,
+  RemoteStorageService,
+  LocalStorageService,
+  Controller,
+  State,
+  Model,
+  CalendarListComponent,
+  VisibleDaysInputComponent,
+  CalendarEntryRenderer,
+  CalendarEntryActivityRenderer,
+  JumpToDaysInputComponent,
+};

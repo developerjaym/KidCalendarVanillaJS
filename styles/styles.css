@@ -76,7 +76,7 @@ select {
 
 h2 {
     background-color: firebrick;
-    color: rgba(255, 255, 255, 0.66);
+    color: rgba(255, 255, 255, 0.75);
     padding: var(--space-thick);
     margin: var(--space-thin);
     font-family: 'Courier New', Courier, monospace;

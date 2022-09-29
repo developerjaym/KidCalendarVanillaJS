@@ -14,8 +14,8 @@ import {
 import environment from "./modules/common/environment.js";
 
 (async () => {
-  const storageImplementation = new RemoteStorageService(environment);
-  // const storageImplementation = new LocalStorageService(environment);
+//   const storageImplementation = new RemoteStorageService(environment);
+  const storageImplementation = new LocalStorageService(environment);
   const storageManager = new StorageManager(storageImplementation);
   try {
     const existing = await storageImplementation.open();
