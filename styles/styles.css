@@ -63,6 +63,7 @@ select {
     align-items: center;
 
     padding: var(--space-thick);
+    column-gap: var(--space-thick);
 
     background-color: lightgray;
     color: black;
@@ -86,6 +87,11 @@ h2 {
 
 select {
     text-transform: capitalize;
+}
+
+.warning-paragraph {
+    font-size: xx-large;
+    text-align: center;
 }
 
 .icon {
@@ -130,6 +136,14 @@ select {
 form:invalid .button-submit {
     background-color: rgba(144, 238, 144, 0.15);
     color: rgba(0, 0, 0, 0.15);
+}
+
+.margin-left-auto {
+    margin-left: auto;
+}
+
+.margin-right-auto {
+    margin-right: auto;
 }
 
 #calendarArea {
@@ -213,10 +227,6 @@ form:invalid .button-submit {
 
 }
 
-.loading {
-    font-size: xx-large;
-}
-
 .modal form {
     width: 100%;
 }
@@ -251,6 +261,9 @@ form:invalid .button-submit {
 }
 
 @media screen and (max-width: 600px) {
+    .toolbar {
+        column-gap: var(--space-thin);
+    }
     #jumpToDateInputLabel {
         display: none;
     }
