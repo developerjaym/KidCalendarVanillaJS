@@ -322,7 +322,6 @@ class JumpToDaysInputComponent extends Observer {
     super();
     this.#jumpToDateInput = document.getElementById("jumpToDateInput");
     this.#jumpToDateInput.onchange = (e) => {
-      console.log(this.#jumpToDateInput.value);
       const jumpToMe = document.getElementById(
         this.#jumpToDateInput.value
       );
