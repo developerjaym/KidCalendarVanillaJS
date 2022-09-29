@@ -47,8 +47,10 @@ class Icons {
     static BAGEL = '🥯';
     static CITY = '🏙';
     static CAR = '🚗';
-    static EMPTY = "";
-    static ALL = [Icons.EMPTY, Icons.STAR, Icons.DELETE, Icons.ADD, Icons.BAGEL, Icons.HAMBURGER, Icons.OLD_WOMAN, Icons.SCHOOL, Icons.PLANE, Icons.SHIP, Icons.CAR, Icons.CITY, Icons.WEDDING, Icons.HOSPITAL, Icons.DANCE, Icons.LIBRARY, Icons.MUSIC];
+    static TOY = '🧸';
+    static CAROUSEL = '🎠';
+    static EMPTY = '';
+    static ALL = [Icons.EMPTY, Icons.STAR, Icons.DELETE, Icons.ADD, Icons.BAGEL, Icons.HAMBURGER, Icons.OLD_WOMAN, Icons.SCHOOL, Icons.TOY, Icons.CAROUSEL, Icons.PLANE, Icons.SHIP, Icons.CAR, Icons.CITY, Icons.WEDDING, Icons.HOSPITAL, Icons.DANCE, Icons.LIBRARY, Icons.MUSIC];
 }
 
 class ButtonFactory {
@@ -107,7 +109,6 @@ class UIAnimation {
         }, animation.time);
     }
     static createAppearingAnimation(element) {
-        // element.classList.remove(CalendarAnimation.DISAPPEAR.className);
         const animation = UIAnimation.APPEAR;
         element.classList.add(animation.className);
     }
@@ -150,4 +151,4 @@ class ErrorModal extends Modal {
     }
 }
 
-export {Modal, ErrorModal, Colors, UIAnimation, ButtonTypes, ButtonFactory, Icons, SelectFactory, AnimationDuration, AnimationClasses}
+export {Modal, ErrorModal, Colors, UIAnimation, ButtonFactory, Icons, SelectFactory}
