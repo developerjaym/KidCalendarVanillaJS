@@ -181,7 +181,7 @@ form:invalid .button-submit {
     row-gap: var(--space-thin);
     border-width: var(--space-thick);
     border-style: solid;
-    overflow-y: scroll;
+    overflow-y: auto;
 }
 
 .calendar-entry__header {
