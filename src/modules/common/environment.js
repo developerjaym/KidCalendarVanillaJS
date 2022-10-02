@@ -1,4 +1,5 @@
-const environment = fetch(window.location.href + '/environments/environment.json')
-	.then(response => response.json());
-
+const environment = Promise.resolve({
+    "rootUrl": "http://localhost:8080",
+    "tokenKey": "token"
+})
 export default await environment;

@@ -43,7 +43,7 @@ export class LocalDate {
     }
 
     toISOString() {
-        return `${this.#jsDate.getUTCFullYear()}-${this.#pad(this.#jsDate.getUTCMonth() + 1)}-${this.#pad(this.#jsDate.getUTCDate())}`;
+        return `${this.#jsDate.getUTCFullYear()}-${LocalDate.#pad(this.#jsDate.getUTCMonth() + 1)}-${LocalDate.#pad(this.#jsDate.getUTCDate())}`;
     }
 
     toLocaleString() {
@@ -84,7 +84,7 @@ export class LocalDate {
         return new LocalDate(new Date(this.toISOString()));
     }
 
-    #pad(number) {
+    static #pad(number) {
         const numberString = String(number);
         if(numberString.length < 2) {
             return `0${number}`;
@@ -93,7 +93,10 @@ export class LocalDate {
     }
 
     static today() {
-        return new LocalDate(new Date()).clone(); //shed time
+        const todayAsDate = new Date();
+        // Take today, get the user's year-month-date to initialize a LocalDate of today
+        // If I did new LocalDate(new Date()), then the LocalDate would be whatever 'today' is in England
+        return LocalDate.fromISOString(`${todayAsDate.getFullYear()}-${LocalDate.#pad(todayAsDate.getMonth() + 1)}-${LocalDate.#pad(todayAsDate.getDate())}`);
     }
 
     static fromISOString(string) {
