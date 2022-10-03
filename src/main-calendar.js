@@ -14,7 +14,7 @@ import {
 import environment from "./modules/common/environment.js";
 
 (async () => {
-//   const storageImplementation = new RemoteStorageService(environment);
+  // const storageImplementation = new RemoteStorageService(environment);
   const storageImplementation = new LocalStorageService(environment);
   const storageManager = new StorageManager(storageImplementation);
   try {
@@ -36,8 +36,7 @@ import environment from "./modules/common/environment.js";
     model.addObserver(storageManager);
     model.start();
   } catch (e) {
-    const url = new URL(window.location);
-    url.pathname = 'authentication.html';
+    const url = new URL(window.location.href + "authentication");
     url.searchParams.append('from', window.location.href)
     window.history.pushState({}, "", url);
     window.location = url; // redirect for authentication

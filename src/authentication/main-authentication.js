@@ -4,8 +4,8 @@ import {
   AuthenticationController,
   AuthenticationView,
   Redirecter,
-} from "./modules/authentication/authentication.js";
-import environment from "./modules/common/environment.js";
+} from "../modules/authentication/authentication.js";
+import environment from "../modules/common/environment.js";
 
 (async () => {
   const authService = new AuthenticationService(environment);
