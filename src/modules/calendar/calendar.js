@@ -11,6 +11,7 @@ import {
   Modal,
   UIAnimation,
   SelectFactory,
+  RadioFactory,
   Icons,
 } from "../common/ui.js";
 import {LocalDate, HolidayUtility} from "./LocalDate.js";
@@ -127,6 +128,7 @@ class Model extends Observable {
     this.notifyAll(this.#state);
   }
   addActivity(date, newActivity) {
+    console.log(newActivity.repeat);
     if (!this.#state.contains(date.toISOString())) {
       this.#state.add(
         date.toISOString(),
@@ -266,12 +268,16 @@ class AddEntryFormModal extends Modal {
     iconLabel.textContent = "Icon";
     iconLabel.append(iconSelect);
 
+    // const radioGroup = RadioFactory.createRadioGroup('Repeat', 'repeat', 
+    //   {'Everyday': 'daily', 'Every Week': 'weekly', 'Never': 'never'}, 'never'
+    // )
+
     const button = ButtonFactory.createSubmitButton(
       Boolean(entry) ? "Update" : "Add"
     );
     form.onsubmit = (e) => {
       e.preventDefault(); // so it doesn't try to submit the form
-      const data = Object.fromEntries(new FormData(event.target));
+      const data = Object.fromEntries(new FormData(e.target));
       onAdd(CalendarEntryActivity.fromData(data));
       super.close();
     };

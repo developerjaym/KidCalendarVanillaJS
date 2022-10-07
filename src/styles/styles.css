@@ -56,6 +56,25 @@ select {
     padding: var(--space-thick);
 }
 
+.radio-group-label {
+    display: flex;
+    flex-direction: column;
+}
+
+.radio-group-buttons {
+    display: flex;
+    justify-content: space-evenly;
+}
+
+.radio-group-buttons label {
+    display: flex;
+    flex-direction: row;
+}
+
+.radio-group-buttons label input {
+    margin: 0 0 0 var(--space-thin);
+}
+
 .toolbar {
     display: flex;
     flex-direction: row;

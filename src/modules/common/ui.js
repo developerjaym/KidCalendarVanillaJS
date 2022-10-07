@@ -84,6 +84,28 @@ class SelectFactory {
     }
 }
 
+class RadioFactory {
+    static createRadioGroup(text, groupName, displayTextToValues) {
+        const container = document.createElement('label');
+        container.textContent = text;
+        container.classList.add('radio-group-label');
+        const buttonContainer = document.createElement('div');
+        buttonContainer.classList.add('radio-group-buttons');
+        for(let displayText in displayTextToValues) {
+            const labelContainer = document.createElement('label')
+            labelContainer.textContent = displayText;
+            const radioButton = document.createElement('input');
+            radioButton.type = 'radio'
+            radioButton.name = groupName;
+            radioButton.value = displayTextToValues[displayText];
+            labelContainer.appendChild(radioButton);
+            buttonContainer.append(labelContainer);
+        }
+        container.appendChild(buttonContainer);
+        return container;
+    }
+}
+
 class AnimationDuration {
     static SHORT = 444;
     static LONG = 1111;
@@ -151,4 +173,4 @@ class ErrorModal extends Modal {
     }
 }
 
-export {Modal, ErrorModal, Colors, UIAnimation, ButtonFactory, Icons, SelectFactory}
+export {Modal, ErrorModal, Colors, UIAnimation, ButtonFactory, Icons, RadioFactory, SelectFactory}

@@ -107,6 +107,8 @@ export class LocalDate {
 export class Holiday {
     static CHRISTMAS = new Holiday("Christmas", "🎄");
     static HALLOWEEN = new Holiday("Halloween", "🎃");
+    static THANKSGIVING = new Holiday("Thanksgiving", "🦃");
+    static FOURTH_OF_JULY = new Holiday("US Independence Day", "🇺🇸");
     constructor(name, icon) {
       this.name = name;
       this.icon = icon;
@@ -122,7 +124,27 @@ export class HolidayUtility {
       if (localDate.getMonth() === 10 && localDate.getDate() === 31) {
         holidays.push(Holiday.HALLOWEEN);
       }
+      if (localDate.getMonth() === 7 && localDate.getDate() === 4) {
+        holidays.push(Holiday.FOURTH_OF_JULY);
+      }
+      if(HolidayUtility.#isXDayOfMonth(localDate, 4, DayOfWeek.THURSDAY, 11)) {
+        holidays.push(Holiday.THANKSGIVING);
+      }
       return holidays;
+    }
+    static #isXDayOfMonth(localDate, count, dayOfWeek, month) {
+        const rightDay = localDate.getDayOfWeek() === dayOfWeek;
+        const rightMonth = localDate.getMonth() === month;
+        let actualCount = 1;
+        let previousDay = localDate.prior();
+        while(rightDay && rightMonth && previousDay.getMonth() === month) {
+            if(previousDay.getDayOfWeek() === localDate.getDayOfWeek()) {
+                actualCount++;
+            }
+            previousDay = previousDay.prior();
+        }
+        const rightCount = actualCount === count;
+        return rightDay && rightMonth && rightCount;
     }
   }
 
