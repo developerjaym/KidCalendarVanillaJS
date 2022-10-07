@@ -36,7 +36,6 @@ import environment from "./modules/common/environment.js";
     model.addObserver(storageManager);
     model.start();
   } catch (e) {
-    console.log(e);
     const url = new URL(window.location.href + "authentication");
     url.searchParams.append('from', window.location.href)
     window.history.pushState({}, "", url);

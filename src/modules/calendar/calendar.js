@@ -14,9 +14,27 @@ import {
   RadioFactory,
   Icons,
 } from "../common/ui.js";
-import {LocalDate, HolidayUtility} from "./LocalDate.js";
+import { LocalDate, HolidayUtility } from "./LocalDate.js";
 
-
+class Repeat {
+  static DAILY = new Repeat(1, 7, "Daily");
+  static WEEKLY = new Repeat(7, 4, "Weekly");
+  static NEVER = new Repeat(0, 1, "Never");
+  constructor(interval, count, name) {
+    this.interval = interval;
+    this.count = count;
+    this.name = name;
+  }
+  static fromName(name) {
+    if (Repeat.DAILY.name === name) {
+      return Repeat.DAILY;
+    } else if (Repeat.WEEKLY.name === name) {
+      return Repeat.WEEKLY;
+    } else {
+      return Repeat.NEVER;
+    }
+  }
+}
 
 class State extends AbstractState {
   constructor(daysVisible = 7, calendarEntries = {}) {
@@ -48,7 +66,7 @@ class State extends AbstractState {
   deleteBefore(localDate) {
     const keys = Object.keys(this.calendarEntries);
     for (let key of keys) {
-      if(localDate.isGreaterThan(LocalDate.fromISOString(key)))  {
+      if (localDate.isGreaterThan(LocalDate.fromISOString(key))) {
         delete this.calendarEntries[key];
       }
     }
@@ -128,14 +146,21 @@ class Model extends Observable {
     this.notifyAll(this.#state);
   }
   addActivity(date, newActivity) {
-    console.log(newActivity.repeat);
-    if (!this.#state.contains(date.toISOString())) {
-      this.#state.add(
-        date.toISOString(),
-        new CalendarEntry(date, [newActivity])
-      );
-    } else {
-      this.#state.addActivity(date.toISOString(), newActivity);
+    const repeat = Repeat.fromName(newActivity.repeat);
+    let dateToAddTo = date.clone();
+    for (let count = 0; count < repeat.count; count++) {
+      const activityToAdd = CalendarEntryActivity.fromData(newActivity);
+      if (!this.#state.contains(dateToAddTo.toISOString())) {
+        this.#state.add(
+          dateToAddTo.toISOString(),
+          new CalendarEntry(dateToAddTo, [activityToAdd])
+        );
+      } else {
+        this.#state.addActivity(dateToAddTo.toISOString(), activityToAdd);
+      }
+      for(let i = 0; i < repeat.interval; i++) {
+        dateToAddTo = dateToAddTo.next()
+      }
     }
     this.notifyAll(this.#state);
   }
@@ -143,8 +168,10 @@ class Model extends Observable {
     this.#state.removeActivity(entry.dateString, activityId);
     this.notifyAll(this.#state);
   }
-  updateActivity(entry, newActivityValue) {
-    this.#state.updateActivity(entry, newActivityValue);
+  updateActivity(entry, newActivityValue, activityId) {
+    const activity = CalendarEntryActivity.fromData(newActivityValue);
+    activity.id = activityId;
+    this.#state.updateActivity(entry, activity);
     this.notifyAll(this.#state);
   }
   #deleteEarlierEntries() {
@@ -177,8 +204,7 @@ class CalendarEntryActivityRenderer {
       e.stopPropagation();
       new AddEntryFormModal(
         (newActivityValue) => {
-          newActivityValue.id = activity.id;
-          this.#controller.onActivityUpdated(entry, newActivityValue);
+          this.#controller.onActivityUpdated(entry, newActivityValue, activity.id);
         },
         entry.dateString,
         activity
@@ -219,8 +245,9 @@ class CalendarEntryRenderer {
     return container;
   }
   #style(container, dateString, entry) {
-    container.style.borderColor = 
-      LocalDate.fromISOString(dateString).isWeekend()
+    container.style.borderColor = LocalDate.fromISOString(
+      dateString
+    ).isWeekend()
       ? Colors.WEEKEND
       : Colors.WEEKDAY;
   }
@@ -239,8 +266,7 @@ class AddEntryFormModal extends Modal {
     const formArea = document.createElement("div");
     const title = document.createElement("h2");
     title.textContent =
-      "Activity for " +
-      LocalDate.fromISOString(dateString).toLocaleString();
+      "Activity for " + LocalDate.fromISOString(dateString).toLocaleString();
     const form = document.createElement("form");
     const textLabel = document.createElement("label");
     textLabel.textContent = "Activity";
@@ -268,9 +294,11 @@ class AddEntryFormModal extends Modal {
     iconLabel.textContent = "Icon";
     iconLabel.append(iconSelect);
 
-    // const radioGroup = RadioFactory.createRadioGroup('Repeat', 'repeat', 
-    //   {'Everyday': 'daily', 'Every Week': 'weekly', 'Never': 'never'}, 'never'
-    // )
+    const radioGroup = RadioFactory.createRadioGroup("Repeat", "repeat", {
+      Daily: Repeat.DAILY.name,
+      Weekly: Repeat.WEEKLY.name,
+      Never: Repeat.NEVER.name,
+    });
 
     const button = ButtonFactory.createSubmitButton(
       Boolean(entry) ? "Update" : "Add"
@@ -278,10 +306,10 @@ class AddEntryFormModal extends Modal {
     form.onsubmit = (e) => {
       e.preventDefault(); // so it doesn't try to submit the form
       const data = Object.fromEntries(new FormData(e.target));
-      onAdd(CalendarEntryActivity.fromData(data));
+      onAdd(data);
       super.close();
     };
-    form.append(textLabel, colorLabel, iconLabel, button);
+    form.append(textLabel, colorLabel, iconLabel, ...[(Boolean(entry) ? [] : radioGroup)], button);
     super.append(title, form);
   }
 }
@@ -301,7 +329,7 @@ class CalendarListComponent extends Observer {
     };
   }
   onUpdate(state) {
-    let date =  LocalDate.today();
+    let date = LocalDate.today();
     let thisLoad = [];
     this.#calendarListElement.textContent = ""; // remove all children
     for (let i = 0; i < state.daysVisible; i++) {
@@ -328,9 +356,7 @@ class JumpToDaysInputComponent extends Observer {
     super();
     this.#jumpToDateInput = document.getElementById("jumpToDateInput");
     this.#jumpToDateInput.onchange = (e) => {
-      const jumpToMe = document.getElementById(
-        this.#jumpToDateInput.value
-      );
+      const jumpToMe = document.getElementById(this.#jumpToDateInput.value);
       if (Boolean(jumpToMe)) {
         jumpToMe.scrollIntoView();
       } else {
@@ -371,8 +397,8 @@ class Controller {
   onActivityDeleted(entry, activityId) {
     this.#model.removeActivity(entry, activityId);
   }
-  onActivityUpdated(entry, newActivityValue) {
-    this.#model.updateActivity(entry, newActivityValue);
+  onActivityUpdated(entry, newActivityValue, activityId) {
+    this.#model.updateActivity(entry, newActivityValue, activityId);
   }
 }
 
