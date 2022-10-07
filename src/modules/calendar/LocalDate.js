@@ -84,6 +84,10 @@ export class LocalDate {
         return new LocalDate(new Date(this.toISOString()));
     }
 
+    isValid() {
+        return this.#jsDate != 'Invalid Date';
+    }
+
     static #pad(number) {
         const numberString = String(number);
         if(numberString.length < 2) {

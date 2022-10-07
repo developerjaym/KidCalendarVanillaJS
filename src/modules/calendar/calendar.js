@@ -1,38 +1,43 @@
 import {
-  Observable,
-  Observer,
-  AbstractState,
-  IdentifierUtility,
-} from "../common/utility.js";
-import {
   ButtonFactory,
   Colors,
   ErrorModal,
-  Modal,
-  UIAnimation,
-  SelectFactory,
-  RadioFactory,
   Icons,
+  Modal,
+  SelectFactory,
+  UIAnimation,
 } from "../common/ui.js";
-import { LocalDate, HolidayUtility } from "./LocalDate.js";
+import {
+  AbstractState,
+  IdentifierUtility,
+  Observable,
+  Observer,
+} from "../common/utility.js";
+import { HolidayUtility, LocalDate } from "./LocalDate.js";
 
-class Repeat {
-  static DAILY = new Repeat(1, 7, "Daily");
-  static WEEKLY = new Repeat(7, 4, "Weekly");
-  static NEVER = new Repeat(0, 1, "Never");
-  constructor(interval, count, name) {
+class RepeatInterval {
+  static DAILY = new RepeatInterval(1, "Daily");
+  static WEEKLY = new RepeatInterval(7, "Weekly");
+  static NONE = new RepeatInterval(0, "None");
+  constructor(interval, name) {
     this.interval = interval;
-    this.count = count;
     this.name = name;
   }
   static fromName(name) {
-    if (Repeat.DAILY.name === name) {
-      return Repeat.DAILY;
-    } else if (Repeat.WEEKLY.name === name) {
-      return Repeat.WEEKLY;
+    if (RepeatInterval.DAILY.name === name) {
+      return RepeatInterval.DAILY;
+    } else if (RepeatInterval.WEEKLY.name === name) {
+      return RepeatInterval.WEEKLY;
     } else {
-      return Repeat.NEVER;
+      return RepeatInterval.NONE;
     }
+  }
+}
+
+class Repeat {
+  constructor(interval, untilString) {
+    this.interval = interval;
+    this.until = LocalDate.fromISOString(untilString);
   }
 }
 
@@ -146,9 +151,15 @@ class Model extends Observable {
     this.notifyAll(this.#state);
   }
   addActivity(date, newActivity) {
-    const repeat = Repeat.fromName(newActivity.repeat);
+    const repeat = new Repeat(
+      RepeatInterval.fromName(newActivity.repeatFrequency),
+      newActivity.repeatUntil || date.toISOString()
+    );
     let dateToAddTo = date.clone();
-    for (let count = 0; count < repeat.count; count++) {
+    while (
+      repeat.until.isGreaterThan(dateToAddTo) ||
+      repeat.until.isEqual(dateToAddTo)
+    ) {
       const activityToAdd = CalendarEntryActivity.fromData(newActivity);
       if (!this.#state.contains(dateToAddTo.toISOString())) {
         this.#state.add(
@@ -158,8 +169,8 @@ class Model extends Observable {
       } else {
         this.#state.addActivity(dateToAddTo.toISOString(), activityToAdd);
       }
-      for(let i = 0; i < repeat.interval; i++) {
-        dateToAddTo = dateToAddTo.next()
+      for (let i = 0; i < repeat.interval.interval; i++) {
+        dateToAddTo = dateToAddTo.next();
       }
     }
     this.notifyAll(this.#state);
@@ -204,7 +215,11 @@ class CalendarEntryActivityRenderer {
       e.stopPropagation();
       new AddEntryFormModal(
         (newActivityValue) => {
-          this.#controller.onActivityUpdated(entry, newActivityValue, activity.id);
+          this.#controller.onActivityUpdated(
+            entry,
+            newActivityValue,
+            activity.id
+          );
         },
         entry.dateString,
         activity
@@ -294,11 +309,21 @@ class AddEntryFormModal extends Modal {
     iconLabel.textContent = "Icon";
     iconLabel.append(iconSelect);
 
-    const radioGroup = RadioFactory.createRadioGroup("Repeat", "repeat", {
-      Daily: Repeat.DAILY.name,
-      Weekly: Repeat.WEEKLY.name,
-      Never: Repeat.NEVER.name,
-    });
+    const frequencyLabel = document.createElement("label");
+    frequencyLabel.textContent = "Repeat Frequency";
+    const frequencyInput = SelectFactory.createSelect("repeatFrequency", [
+      RepeatInterval.DAILY.name,
+      RepeatInterval.WEEKLY.name,
+      RepeatInterval.NONE.name,
+    ]);
+    frequencyLabel.append(frequencyInput);
+
+    const untilLabel = document.createElement("label");
+    const until = document.createElement("input");
+    until.type = "date";
+    until.name = "repeatUntil";
+    untilLabel.textContent = "Repeat Until";
+    untilLabel.appendChild(until);
 
     const button = ButtonFactory.createSubmitButton(
       Boolean(entry) ? "Update" : "Add"
@@ -309,7 +334,16 @@ class AddEntryFormModal extends Modal {
       onAdd(data);
       super.close();
     };
-    form.append(textLabel, colorLabel, iconLabel, ...[(Boolean(entry) ? [] : radioGroup)], button);
+    form.append(
+      textLabel,
+      colorLabel,
+      iconLabel,
+      ...[
+        Boolean(entry) ? [] : frequencyLabel,
+        Boolean(entry) ? [] : untilLabel,
+      ],
+      button
+    );
     super.append(title, form);
   }
 }
