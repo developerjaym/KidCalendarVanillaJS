@@ -7,11 +7,7 @@ import {
   SelectFactory,
   UIAnimation,
 } from "../common/ui.js";
-import {
-  IdentifierUtility,
-  Observable,
-  Observer,
-} from "../common/utility.js";
+import { IdentifierUtility, Observable, Observer } from "../common/utility.js";
 import { HolidayUtility, LocalDate } from "./LocalDate.js";
 
 class RepeatInterval {
@@ -41,13 +37,13 @@ class Repeat {
 }
 
 class CalendarEntryActivityHelper {
-  static create({text, color = Colors.TRANSPARENT, icon = Icons.EMPTY}) {
+  static create({ text, color = Colors.TRANSPARENT, icon = Icons.EMPTY }) {
     return {
       text,
       color,
       icon,
-      id: IdentifierUtility.generateRandomId()
-    }
+      id: IdentifierUtility.generateRandomId(),
+    };
   }
 }
 
@@ -55,8 +51,8 @@ class CalendarEntryHelper {
   static create(localDate, activities = []) {
     return {
       dateString: localDate.toISOString(),
-      activities: activities
-    }
+      activities: activities,
+    };
   }
   static addActivity(entry, activity) {
     entry.activities.push(activity);
@@ -98,7 +94,10 @@ class StateHelper {
     CalendarEntryHelper.removeActivity(state.calendarEntries[date], activityId);
   }
   static updateActivity(state, entry, newActivityValue) {
-    CalendarEntryHelper.updateActivity(state.calendarEntries[entry.dateString], newActivityValue);
+    CalendarEntryHelper.updateActivity(
+      state.calendarEntries[entry.dateString],
+      newActivityValue
+    );
   }
   static clearEntries(state) {
     state.calendarEntries = {};
@@ -142,12 +141,17 @@ class Model extends Observable {
     ) {
       const activityToAdd = CalendarEntryActivityHelper.create(newActivity);
       if (!StateHelper.contains(this.#state, dateToAddTo.toISOString())) {
-        StateHelper.add(this.#state,
+        StateHelper.add(
+          this.#state,
           dateToAddTo.toISOString(),
           CalendarEntryHelper.create(dateToAddTo, [activityToAdd])
         );
       } else {
-       StateHelper.addActivity( this.#state, dateToAddTo.toISOString(), activityToAdd);
+        StateHelper.addActivity(
+          this.#state,
+          dateToAddTo.toISOString(),
+          activityToAdd
+        );
       }
       for (let i = 0; i < repeat.interval.interval; i++) {
         dateToAddTo = dateToAddTo.next();

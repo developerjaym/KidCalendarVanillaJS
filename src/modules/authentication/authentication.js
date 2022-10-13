@@ -204,8 +204,8 @@ class AuthenticationStateHelper {
   static create(authenticated) {
     return {
       authenticated,
-      error: false
-    }
+      error: false,
+    };
   }
 }
 

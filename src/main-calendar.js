@@ -36,7 +36,7 @@ import environment from "./modules/common/environment.js";
     model.onInitialLoad(startingState);
   } catch (e) {
     const url = new URL(window.location.href + "authentication");
-    url.searchParams.append('from', window.location.href)
+    url.searchParams.append("from", window.location.href);
     window.history.pushState({}, "", url);
     window.location = url; // redirect for authentication
   }
