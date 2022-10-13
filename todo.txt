@@ -1,0 +1,25 @@
+1. Add something like 'seriesId' to calendarEntryActivities
+   That will allow me to 'update series' and 'delete series', etc.
+
+2. I should stop using a State class and the other classes and just work with pure js objects.
+   That will make everything so much easier.
+   const state = {
+    "2022-10-10": [
+            {
+                id: 1,
+                seriesId: 1,
+                text: "preschool",
+                icon: "..."
+            }
+        ]
+   }
+    That's far easier to add activities to. state = {
+        ...state, "2022-10-10": [
+            ...state["2022-10-10"], {
+                id: 2,
+                seriesId: 2,
+                text: "church",
+                icon: "..."
+            }
+        ]
+    }

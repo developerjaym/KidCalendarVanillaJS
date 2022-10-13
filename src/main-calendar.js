@@ -3,7 +3,6 @@ import {
   RemoteStorageService,
   LocalStorageService,
   Controller,
-  State,
   Model,
   CalendarListComponent,
   VisibleDaysInputComponent,
@@ -19,8 +18,8 @@ import environment from "./modules/common/environment.js";
   const storageManager = new StorageManager(storageImplementation);
   try {
     const existing = await storageImplementation.open();
-    const startingState = State.fromData(existing) || new State();
-    const model = new Model(startingState);
+    const startingState = existing;
+    const model = new Model();
     const controller = new Controller(model);
     const calendarListComponent = new CalendarListComponent(
       controller,
@@ -34,7 +33,7 @@ import environment from "./modules/common/environment.js";
     model.addObserver(visibleDaysInput);
     model.addObserver(calendarListComponent);
     model.addObserver(storageManager);
-    model.start();
+    model.onInitialLoad(startingState);
   } catch (e) {
     const url = new URL(window.location.href + "authentication");
     url.searchParams.append('from', window.location.href)

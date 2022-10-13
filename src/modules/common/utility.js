@@ -12,12 +12,6 @@ class Observer {
     }
 }
 
-class AbstractState {
-    asData() {
-        return JSON.parse(JSON.stringify(this));
-    }
-}
-
 class Observable {
     #observers;
     constructor() {
@@ -27,8 +21,8 @@ class Observable {
         this.#observers.push(observer);
     }
     notifyAll(state) {
-        this.#observers.forEach(observer => observer.onUpdate(state.asData()));
+        this.#observers.forEach(observer => observer.onUpdate(state));
     }
 }
 
-export {IdentifierUtility, Observer, AbstractState, Observable}
+export {IdentifierUtility, Observer, Observable}

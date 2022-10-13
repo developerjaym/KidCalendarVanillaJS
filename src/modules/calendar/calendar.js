@@ -8,7 +8,6 @@ import {
   UIAnimation,
 } from "../common/ui.js";
 import {
-  AbstractState,
   IdentifierUtility,
   Observable,
   Observer,
@@ -41,113 +40,94 @@ class Repeat {
   }
 }
 
-class State extends AbstractState {
-  constructor(daysVisible = 7, calendarEntries = {}) {
-    super();
-    this.daysVisible = daysVisible;
-    this.calendarEntries = calendarEntries;
-  }
-  add(date, entry) {
-    this.calendarEntries[date] = entry;
-  }
-  contains(date) {
-    return Boolean(this.calendarEntries[date]);
-  }
-  addActivity(date, activity) {
-    this.calendarEntries[date].addActivity(activity);
-  }
-  removeActivity(date, activityId) {
-    this.calendarEntries[date].removeActivity(activityId);
-  }
-  updateActivity(entry, newActivityValue) {
-    this.calendarEntries[entry.dateString].updateActivity(newActivityValue);
-  }
-  clearEntries() {
-    this.calendarEntries = {};
-  }
-  setDaysVisible(newValue) {
-    this.daysVisible = Number(newValue);
-  }
-  deleteBefore(localDate) {
-    const keys = Object.keys(this.calendarEntries);
-    for (let key of keys) {
-      if (localDate.isGreaterThan(LocalDate.fromISOString(key))) {
-        delete this.calendarEntries[key];
-      }
+class CalendarEntryActivityHelper {
+  static create({text, color = Colors.TRANSPARENT, icon = Icons.EMPTY}) {
+    return {
+      text,
+      color,
+      icon,
+      id: IdentifierUtility.generateRandomId()
     }
-  }
-  asData() {
-    return JSON.parse(JSON.stringify(this));
-  }
-  static fromData(data) {
-    if (!data) {
-      return null;
-    }
-    for (let ce in data.calendarEntries) {
-      const original = data.calendarEntries[ce];
-      data.calendarEntries[ce] = CalendarEntry.fromData(original);
-    }
-    return new State(data.daysVisible, data.calendarEntries);
   }
 }
 
-class CalendarEntryActivity {
-  constructor(text, color = Colors.TRANSPARENT, icon = Icons.EMPTY) {
-    this.text = text;
-    this.color = color;
-    this.icon = icon;
-    this.id = IdentifierUtility.generateRandomId();
+class CalendarEntryHelper {
+  static create(localDate, activities = []) {
+    return {
+      dateString: localDate.toISOString(),
+      activities: activities
+    }
   }
-  static fromData(data) {
-    return new CalendarEntryActivity(data.text, data.color, data.icon);
+  static addActivity(entry, activity) {
+    entry.activities.push(activity);
   }
-}
-
-class CalendarEntry {
-  constructor(localDate, activities = []) {
-    this.dateString = localDate.toISOString();
-    this.activities = activities;
-  }
-  addActivity(activity) {
-    this.activities.push(activity);
-  }
-  removeActivity(activityId) {
-    this.activities.splice(
-      this.activities.findIndex((activity) => activity.id === activityId),
+  static removeActivity(entry, activityId) {
+    entry.activities.splice(
+      entry.activities.findIndex((activity) => activity.id === activityId),
       1
     );
   }
-  updateActivity(newActivityValue) {
-    this.activities.splice(
-      this.activities.findIndex(
+  static updateActivity(entry, newActivityValue) {
+    entry.activities.splice(
+      entry.activities.findIndex(
         (activity) => activity.id === newActivityValue.id
       ),
       1,
       newActivityValue
     );
   }
-  static fromData(data) {
-    return new CalendarEntry(
-      LocalDate.fromISOString(data.dateString),
-      data.activities.map((activity) =>
-        CalendarEntryActivity.fromData(activity)
-      )
-    );
+}
+
+class StateHelper {
+  static create() {
+    return {
+      daysVisible: 7,
+      calendarEntries: {},
+    };
+  }
+  static add(state, date, entry) {
+    state.calendarEntries[date] = entry;
+  }
+  static contains(state, date) {
+    return Boolean(state.calendarEntries[date]);
+  }
+  static addActivity(state, date, activity) {
+    CalendarEntryHelper.addActivity(state.calendarEntries[date], activity);
+  }
+  static removeActivity(state, date, activityId) {
+    CalendarEntryHelper.removeActivity(state.calendarEntries[date], activityId);
+  }
+  static updateActivity(state, entry, newActivityValue) {
+    CalendarEntryHelper.updateActivity(state.calendarEntries[entry.dateString], newActivityValue);
+  }
+  static clearEntries(state) {
+    state.calendarEntries = {};
+  }
+  static setDaysVisible(state, newValue) {
+    state.daysVisible = Number(newValue);
+  }
+  static deleteBefore(state, localDate) {
+    const keys = Object.keys(state.calendarEntries);
+    for (let key of keys) {
+      if (localDate.isGreaterThan(LocalDate.fromISOString(key))) {
+        delete state.calendarEntries[key];
+      }
+    }
   }
 }
 
 class Model extends Observable {
   #state;
-  constructor(state = new State()) {
+  constructor() {
     super();
-    this.#state = state;
   }
-  start() {
+  onInitialLoad(state = StateHelper.create()) {
+    this.#state = state;
     this.#deleteEarlierEntries();
     this.notifyAll(this.#state);
   }
   setDaysVisible(newDaysVisible) {
-    this.#state.setDaysVisible(newDaysVisible);
+    StateHelper.setDaysVisible(this.#state, newDaysVisible);
     this.notifyAll(this.#state);
   }
   addActivity(date, newActivity) {
@@ -160,14 +140,14 @@ class Model extends Observable {
       repeat.until.isGreaterThan(dateToAddTo) ||
       repeat.until.isEqual(dateToAddTo)
     ) {
-      const activityToAdd = CalendarEntryActivity.fromData(newActivity);
-      if (!this.#state.contains(dateToAddTo.toISOString())) {
-        this.#state.add(
+      const activityToAdd = CalendarEntryActivityHelper.create(newActivity);
+      if (!StateHelper.contains(this.#state, dateToAddTo.toISOString())) {
+        StateHelper.add(this.#state,
           dateToAddTo.toISOString(),
-          new CalendarEntry(dateToAddTo, [activityToAdd])
+          CalendarEntryHelper.create(dateToAddTo, [activityToAdd])
         );
       } else {
-        this.#state.addActivity(dateToAddTo.toISOString(), activityToAdd);
+       StateHelper.addActivity( this.#state, dateToAddTo.toISOString(), activityToAdd);
       }
       for (let i = 0; i < repeat.interval.interval; i++) {
         dateToAddTo = dateToAddTo.next();
@@ -176,18 +156,18 @@ class Model extends Observable {
     this.notifyAll(this.#state);
   }
   removeActivity(entry, activityId) {
-    this.#state.removeActivity(entry.dateString, activityId);
+    StateHelper.removeActivity(this.#state, entry.dateString, activityId);
     this.notifyAll(this.#state);
   }
   updateActivity(entry, newActivityValue, activityId) {
-    const activity = CalendarEntryActivity.fromData(newActivityValue);
+    const activity = CalendarEntryActivityHelper.create(newActivityValue);
     activity.id = activityId;
-    this.#state.updateActivity(entry, activity);
+    StateHelper.updateActivity(this.#state, entry, activity);
     this.notifyAll(this.#state);
   }
   #deleteEarlierEntries() {
     // I don't need to display anything from before today, so let's save space
-    this.#state.deleteBefore(LocalDate.today().prior());
+    StateHelper.deleteBefore(this.#state, LocalDate.today().prior());
   }
 }
 
@@ -524,7 +504,6 @@ export {
   RemoteStorageService,
   LocalStorageService,
   Controller,
-  State,
   Model,
   CalendarListComponent,
   VisibleDaysInputComponent,

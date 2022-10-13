@@ -1,5 +1,5 @@
-import { Observable, Observer, AbstractState } from "../common/utility.js";
 import { ButtonFactory, ErrorModal, Modal } from "../common/ui.js";
+import { Observable, Observer } from "../common/utility.js";
 
 class AuthenticationService {
   #environment;
@@ -71,7 +71,7 @@ class AuthenticationModel extends Observable {
   constructor(authService) {
     super();
     this.#authenticationService = authService;
-    this.#state = new AuthenticationState(
+    this.#state = AuthenticationStateHelper.create(
       this.#authenticationService.isAuthenticated()
     );
   }
@@ -200,11 +200,12 @@ class AuthenticationFormModal extends Modal {
   }
 }
 
-class AuthenticationState extends AbstractState {
-  constructor(authenticated) {
-    super();
-    this.authenticated = authenticated;
-    this.error = false;
+class AuthenticationStateHelper {
+  static create(authenticated) {
+    return {
+      authenticated,
+      error: false
+    }
   }
 }
 
