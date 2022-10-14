@@ -262,7 +262,6 @@ class CalendarEntryRenderer {
 class AddEntryFormModal extends Modal {
   constructor(onAdd, dateString, entry) {
     super();
-    const formArea = document.createElement("div");
     const title = document.createElement("h2");
     title.textContent =
       "Activity for " + LocalDate.fromISOString(dateString).toLocaleString();
