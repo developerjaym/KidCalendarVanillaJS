@@ -105,16 +105,18 @@ class Repeat {
   constructor(interval, untilString) {
     this.interval = interval;
     this.until = LocalDate.fromISOString(untilString);
+    this.id = IdentifierUtility.generateRandomId();
   }
 }
 
 class CalendarEntryActivityHelper {
-  static create({ text, color = Colors.TRANSPARENT, icon = Icons.EMPTY }) {
+  static create({ text, color = Colors.TRANSPARENT, icon = Icons.EMPTY, series = IdentifierUtility.generateRandomId(), id = IdentifierUtility.generateRandomId() }) {
     return {
       text,
       color,
       icon,
-      id: IdentifierUtility.generateRandomId(),
+      series,
+      id,
     };
   }
 }
@@ -215,7 +217,7 @@ class Model extends Observable {
       repeat.until.isGreaterThan(dateToAddTo) ||
       repeat.until.isEqual(dateToAddTo)
     ) {
-      const activityToAdd = CalendarEntryActivityHelper.create(newActivity);
+      const activityToAdd = CalendarEntryActivityHelper.create({...newActivity, series: repeat.id});
       if (!StateHelper.contains(this.#state, dateToAddTo.toISOString())) {
         StateHelper.add(
           this.#state,
@@ -246,13 +248,17 @@ class Model extends Observable {
     });
   }
   updateActivity(newActivityValue, activityId) {
-    const activity = CalendarEntryActivityHelper.create(newActivityValue);
-    activity.id = activityId;
+    const activity = CalendarEntryActivityHelper.create({...newActivityValue, id: activityId});
     StateHelper.updateActivity(this.#state, activityId, activity);
     this.notifyAll({
       state: this.#state,
       type: EventTypes.CALENDAR_UPDATE
     });
+  }
+  updateSeries(newActivityValue, series, onlyUpdateThisAndFutureActivities) {
+    // TODO
+    // find all activities that need updating (based on the series and the boolean onlyUpdateThisAndFutureActivities)
+    // StateHelper.updateActivity
   }
   #deleteEarlierEntries() {
     // I don't need to display anything from before today, so let's save space
@@ -486,6 +492,30 @@ class VisibleDaysInputComponent extends Observer {
   }
 }
 
+class CalendarPage {
+  #model;
+  #controller;
+  #jumpToDaysInputComponent;
+  #visibleDaysInputComponent;
+  #calendarListComponent;
+  #storageManager;
+  constructor(storageImplementation) {
+    this.#storageManager = new StorageManager(storageImplementation);
+    this.#model = new Model();
+    this.#controller = new Controller(this.#model);
+    this.#jumpToDaysInputComponent = new JumpToDaysInputComponent();
+    this.#visibleDaysInputComponent = new VisibleDaysInputComponent(this.#controller);
+    this.#calendarListComponent = new CalendarListComponent(this.#controller);
+    this.#model.addObserver(this.#visibleDaysInputComponent);
+    this.#model.addObserver(this.#calendarListComponent);
+    this.#model.addObserver(this.#storageManager);
+  }
+  async onInit() {
+    const startingState = await this.#storageManager.open()
+    this.#model.onInitialLoad(startingState);
+  }
+}
+
 class Controller {
   #model;
   constructor(model) {
@@ -517,7 +547,7 @@ class LocalStorageService {
       JSON.stringify(data, null, 2)
     );
   }
-  async open(callback) {
+  async open() {
     const stringData = localStorage.getItem(
       LocalStorageService.#CALENDAR_DATA_KEY
     );
@@ -579,22 +609,21 @@ class RemoteStorageService {
   }
 }
 
-class StorageManager {
+class StorageManager extends Observer {
   constructor(implementation) {
+    super();
     this.implementation = implementation;
   }
   onUpdate({ state }) {
     this.implementation.save(state);
   }
+  async open() {
+    return this.implementation.open();
+  }
 }
 
 export {
-  StorageManager,
+  CalendarPage,
   RemoteStorageService,
   LocalStorageService,
-  Controller,
-  Model,
-  CalendarListComponent,
-  VisibleDaysInputComponent,
-  JumpToDaysInputComponent,
 };
