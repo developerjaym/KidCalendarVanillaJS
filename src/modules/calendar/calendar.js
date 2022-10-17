@@ -410,8 +410,16 @@ class CalendarListComponent extends Observer {
   onUpdate({ state, type }) {
     // TODO look at the other properties on the event to selectively re-render
     document.getElementById('listLoadingWarning')?.remove();
-    let date = LocalDate.today();
+    switch(type) {
+      case EventTypes.CALENDAR_LOAD:
+      case EventTypes.CALENDAR_DAYS_VISIBLE:
+      default:
+        this.#updateTotally(state);
+    }
+  }
 
+  #updateTotally(state) {
+    let date = LocalDate.today();
     const arrayOfDateStrings = [];
     for (let i = 0; i < state.daysVisible; i++) {
       const d = date.clone(); // clone to prevent weirdness
@@ -486,7 +494,7 @@ class VisibleDaysInputComponent extends Observer {
     this.#visibleDaysInput.onchange = visibleDaysInputListener;
   }
   onUpdate({ state, type }) {
-    if (["calendar/daysVisible", "calendar/load"].includes(type)) {
+    if ([EventTypes.CALENDAR_DAYS_VISIBLE, EventTypes.CALENDAR_LOAD].includes(type)) {
       this.#visibleDaysInput.value = state.daysVisible;
     }
   }
