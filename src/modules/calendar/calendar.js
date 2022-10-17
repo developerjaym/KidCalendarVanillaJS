@@ -145,12 +145,21 @@ class StateHelper {
     state.calendarEntries[date].activities.push(activity);
   }
   static removeActivity(state, activityId) {
-    Object.values(state.calendarEntries).forEach(entry => entry.activities = entry.activities.filter(activity => activity.id !== activityId))
+    Object.values(state.calendarEntries).forEach(
+      (entry) =>
+        (entry.activities = entry.activities.filter(
+          (activity) => activity.id !== activityId
+        ))
+    );
   }
   static updateActivity(state, activityId, newActivityValue) {
-    const entryToUpdate = Object.values(state.calendarEntries).find(entry => entry.activities.some(activity => activity.id === activityId));
-    const activityIndex = entryToUpdate.activities.indexOf(activity => activity.id === activityId);
-    entryToUpdate.activities.splice(activityIndex, 1, newActivityValue)
+    const entryToUpdate = Object.values(state.calendarEntries).find((entry) =>
+      entry.activities.some((activity) => activity.id === activityId)
+    );
+    const activityIndex = entryToUpdate.activities.indexOf(
+      (activity) => activity.id === activityId
+    );
+    entryToUpdate.activities.splice(activityIndex, 1, newActivityValue);
   }
   static clearEntries(state) {
     state.calendarEntries = {};
@@ -184,12 +193,17 @@ class Model extends Observable {
   onInitialLoad(state) {
     this.#state = state || StateHelper.create();
     this.#deleteEarlierEntries();
-    this.notifyAll({state: this.#state, type: "calendar/load", added: Object.keys(this.#state.calendarEntries), removed: []});
+    this.notifyAll({
+      state: this.#state,
+      type: EventTypes.CALENDAR_LOAD,
+    });
   }
   setDaysVisible(newDaysVisible) {
     StateHelper.setDaysVisible(this.#state, newDaysVisible);
-    // TODO figure out the dates that got added or removed from state.calendarEntries
-    this.notifyAll({state: this.#state, type: "calendar/daysVisible", added: Object.keys(this.#state.calendarEntries), removed: []});
+    this.notifyAll({
+      state: this.#state,
+      type: EventTypes.CALENDAR_DAYS_VISIBLE
+    });
   }
   addActivity(date, newActivity) {
     const repeat = new Repeat(
@@ -219,27 +233,32 @@ class Model extends Observable {
         dateToAddTo = dateToAddTo.next();
       }
     }
-    // TODO figure out what dates got changed
-    this.notifyAll({state: this.#state, type: "calendar/add", added: Object.keys(this.#state.calendarEntries), removed: []});
+    this.notifyAll({
+      state: this.#state,
+      type: EventTypes.CALENDAR_ADD
+    });
   }
   removeActivity(activityId) {
     StateHelper.removeActivity(this.#state, activityId);
-    // TODO figure out what dates got changed
-    this.notifyAll({state: this.#state, type: "calendar/remove", added: Object.keys(this.#state.calendarEntries), removed: []});
+    this.notifyAll({
+      state: this.#state,
+      type: EventTypes.CALENDAR_REMOVE
+    });
   }
   updateActivity(newActivityValue, activityId) {
     const activity = CalendarEntryActivityHelper.create(newActivityValue);
     activity.id = activityId;
     StateHelper.updateActivity(this.#state, activityId, activity);
-    // TODO figure out what dates got updated
-    this.notifyAll({state: this.#state, type: "calendar/update", added: Object.keys(this.#state.calendarEntries), removed: []});
+    this.notifyAll({
+      state: this.#state,
+      type: EventTypes.CALENDAR_UPDATE
+    });
   }
   #deleteEarlierEntries() {
     // I don't need to display anything from before today, so let's save space
     StateHelper.deleteBefore(this.#state, LocalDate.today().prior());
   }
 }
-
 
 class CalendarEntryComponent {
   #element;
@@ -290,25 +309,26 @@ class CalendarEntryComponent {
   }
   onChange(newEntry) {
     // remove activities that don't exist
-    for(let key of this.#activityComponents.keys()){
-      if(newEntry.activities.none(activity => activity.id === key)) {
-        console.log("deleting on change", key);
-        this.#activityComponents.delete(activity.id);
-        document.getElementById(`${activity.id}`).remove()
+    for (let key of this.#activityComponents.keys()) {
+      if (!newEntry.activities.some((activity) => activity.id === key)) {
+        this.#activityComponents.delete(key);
+        UIAnimation.createDisappearingAnimation(document.getElementById(`${key}`));
       }
     }
-    for(let activity of newEntry?.activities || []) {
-      if(this.#activityComponents.has(activity.id)) {
+    for (let activity of newEntry?.activities || []) {
+      if (this.#activityComponents.has(activity.id)) {
         // update
-        console.log("updating on change", activity.id);
         this.#activityComponents.get(activity.id).onChange(activity);
-      }
-      else {
+      } else {
         // add
-        console.log("adding on change", activity.id);
-        const newComponent = new CalendarActivityComponent(activity, this.#dateString, this.#controller);
+        const newComponent = new CalendarActivityComponent(
+          activity,
+          this.#dateString,
+          this.#controller
+        );
         this.#activityComponents.set(activity.id, newComponent);
         this.#element.appendChild(newComponent.getElement());
+        UIAnimation.createAppearingAnimation(newComponent.getElement());
       }
     }
   }
@@ -318,53 +338,54 @@ class CalendarActivityComponent {
   #activity;
   #element;
   #controller;
+  #textElement;
+  #iconElement;
   constructor(activity, dateString, controller) {
     this.#activity = activity;
     this.#controller = controller;
-    this.#element = this.#createElement(this.#activity, dateString);
+    [this.#element, this.#textElement, this.#iconElement] = this.#createElement(dateString);
   }
-  #createElement(activity, dateString) {
-      const activityContainer = document.createElement("span");
-      activityContainer.id = activity.id;
-      activityContainer.classList.add("calendar-entry__activity");
-      const iconElement = document.createElement("span");
-      iconElement.classList.add("icon");
-      iconElement.textContent = activity.icon;
-      const textElement = document.createElement("span");
-      textElement.textContent = activity.text;
-      activityContainer.append(iconElement, textElement);
-      activityContainer.style.backgroundColor = activity.color;
-      const deleteActivityButton = ButtonFactory.createIconButton(Icons.DELETE);
-      deleteActivityButton.onclick = (e) => {
-        e.stopPropagation();
-        this.#controller.onActivityDeleted(activity.id);
-      };
-      activityContainer.onclick = (e) => {
-        e.stopPropagation();
-        new AddActivityFormModal(
-          (newActivityValue) => {
-            this.#controller.onActivityUpdated(
-              newActivityValue,
-              activity.id
-            );
-          },
-          dateString,
-          activity
-        ).show();
-      };
-      activityContainer.append(deleteActivityButton);
-      return activityContainer;
+  #createElement(dateString) {
+    const activityContainer = document.createElement("span");
+    activityContainer.id = this.#activity.id;
+    activityContainer.classList.add("calendar-entry__activity");
+    const iconElement = document.createElement("span");
+    iconElement.classList.add("icon");
+    iconElement.textContent = this.#activity.icon;
+    const textElement = document.createElement("span");
+    textElement.textContent = this.#activity.text;
+    activityContainer.append(iconElement, textElement);
+    activityContainer.style.backgroundColor = this.#activity.color;
+    const deleteActivityButton = ButtonFactory.createIconButton(Icons.DELETE);
+    deleteActivityButton.onclick = (e) => {
+      e.stopPropagation();
+      this.#controller.onActivityDeleted(this.#activity.id);
+    };
+    activityContainer.onclick = (e) => {
+      e.stopPropagation();
+      new AddActivityFormModal(
+        (newActivityValue) => {
+          this.#controller.onActivityUpdated(newActivityValue, this.#activity.id);
+        },
+        dateString,
+        this.#activity
+      ).show();
+    };
+    activityContainer.append(deleteActivityButton);
+    return [activityContainer, textElement, iconElement];
   }
   getElement() {
     return this.#element;
   }
   onChange(newActivity) {
-    console.log("activity::onChange", newActivity);
-    // change text
-    // change icon
-    // change background-color
-    if(newActivity.text !== this.#activity.text) {
-
+    if (newActivity.text !== this.#activity.text) {
+      this.#textElement.textContent = newActivity.text;
+    }
+    if(newActivity.icon !== this.#activity.icon) {
+      this.#iconElement.textContent = newActivity.icon;
+    }
+    if(newActivity.color !== this.#activity.color) {
+      this.#element.style.backgroundColor = newActivity.color;
     }
     this.#activity = newActivity;
   }
@@ -373,56 +394,60 @@ class CalendarActivityComponent {
 class CalendarListComponent extends Observer {
   #controller;
   #calendarListElement;
-  #tracked;
   #calendarEntryComponents;
   constructor(controller) {
     super();
     this.#controller = controller;
     this.#calendarListElement = document.getElementById("calendarList");
-    this.#tracked = {
-      calendarEntries: [],
-    };
     this.#calendarEntryComponents = [];
   }
-  onUpdate({state, added, removed, type}) {
+  onUpdate({ state, type }) {
     // TODO look at the other properties on the event to selectively re-render
-    /* 
-    { changed: [{
-      date: "2022-10-20",
-      activities: ["1234", "56789"],
-      type: "add/date" (|"")
-    }]}
-    */
-   /*
-    addedDates: ["2020-10-10"],
-    removedDates: ["2020-10-11"]
-
-    Let's say I have a CalendarListComponent that holds an array of CalendarEntryComponents.
-    And let's say CalendarEntryComponent holds an array of CalendarActivityComponents.
-    When a new state comes through,
-       CalendarListComponent can tell each CalendarEntryComponent
-         "here is what your 'day' looks like now"
-         The CalendarEntryComponent can then delete itself
-         OR tell each CalendarActivityComponent
-           "here is what your 'activity' looks like now"
-   */
+    document.getElementById('listLoadingWarning')?.remove();
     let date = LocalDate.today();
-    let thisLoad = [];
-    this.#calendarListElement.textContent = ""; // remove all children
+
+    const arrayOfDateStrings = [];
     for (let i = 0; i < state.daysVisible; i++) {
       const d = date.clone(); // clone to prevent weirdness
-      const dateAsString = d.toISOString();
-      const calendarEntryComponent = new CalendarEntryComponent(dateAsString, this.#controller);
-      calendarEntryComponent.onChange(state.calendarEntries[dateAsString]);
-      const calendarEntryElement = calendarEntryComponent.getElement();
-      this.#calendarListElement.append(calendarEntryElement);
-      if (!this.#tracked.calendarEntries.includes(dateAsString)) {
-        UIAnimation.createAppearingAnimation(calendarEntryElement);
-      }
-      thisLoad.push(dateAsString);
+      arrayOfDateStrings.push(d.toISOString());
       date = d.next();
     }
-    this.#tracked.calendarEntries = thisLoad;
+    const removeMe = [];
+    for (let calendarEntryComponent of this.#calendarEntryComponents) {
+      if (
+        !arrayOfDateStrings.includes(calendarEntryComponent.getElement().id)
+      ) {
+        //remove
+        removeMe.push(calendarEntryComponent);
+        UIAnimation.createDisappearingAnimation(calendarEntryComponent.getElement());
+      }
+    }
+    this.#calendarEntryComponents = this.#calendarEntryComponents.filter(comp => !removeMe.includes(comp));
+    for (let dateString of arrayOfDateStrings) {
+      const matchingEntryComponent = this.#calendarEntryComponents.find(
+        (entryComponent) => entryComponent.getElement().id === dateString
+      );
+      //change
+      if (matchingEntryComponent) {
+        matchingEntryComponent.onChange(state.calendarEntries[dateString]);
+      }
+      //add
+      else {
+        this.#addNewCalendarEntryComponent(dateString, state);
+      }
+    }
+  }
+
+  #addNewCalendarEntryComponent(dateString, state) {
+    const calendarEntryComponent = new CalendarEntryComponent(
+      dateString,
+      this.#controller
+    );
+    calendarEntryComponent.onChange(state.calendarEntries[dateString]);
+    const calendarEntryElement = calendarEntryComponent.getElement();
+    this.#calendarListElement.append(calendarEntryElement);
+    UIAnimation.createAppearingAnimation(calendarEntryElement);
+    this.#calendarEntryComponents.push(calendarEntryComponent);
   }
 }
 
@@ -454,8 +479,8 @@ class VisibleDaysInputComponent extends Observer {
       this.#controller.onVisibleDaysInputUpdated(this.#visibleDaysInput.value);
     this.#visibleDaysInput.onchange = visibleDaysInputListener;
   }
-  onUpdate({state, type}) {
-    if(type === "calendar/daysVisible") {
+  onUpdate({ state, type }) {
+    if (["calendar/daysVisible", "calendar/load"].includes(type)) {
       this.#visibleDaysInput.value = state.daysVisible;
     }
   }
@@ -558,7 +583,7 @@ class StorageManager {
   constructor(implementation) {
     this.implementation = implementation;
   }
-  onUpdate({state}) {
+  onUpdate({ state }) {
     this.implementation.save(state);
   }
 }
