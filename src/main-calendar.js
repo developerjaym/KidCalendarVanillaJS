@@ -6,8 +6,6 @@ import {
   Model,
   CalendarListComponent,
   VisibleDaysInputComponent,
-  CalendarEntryRenderer,
-  CalendarEntryActivityRenderer,
   JumpToDaysInputComponent,
 } from "./modules/calendar/calendar.js";
 import environment from "./modules/common/environment.js";
@@ -22,11 +20,7 @@ import environment from "./modules/common/environment.js";
     const model = new Model();
     const controller = new Controller(model);
     const calendarListComponent = new CalendarListComponent(
-      controller,
-      new CalendarEntryRenderer(
-        controller,
-        new CalendarEntryActivityRenderer(controller)
-      )
+      controller
     );
     const visibleDaysInput = new VisibleDaysInputComponent(controller);
     const jumpToDateInput = new JumpToDaysInputComponent();
@@ -35,6 +29,7 @@ import environment from "./modules/common/environment.js";
     model.addObserver(storageManager);
     model.onInitialLoad(startingState);
   } catch (e) {
+    console.log(e);
     const url = new URL(window.location.href + "authentication");
     url.searchParams.append("from", window.location.href);
     window.history.pushState({}, "", url);

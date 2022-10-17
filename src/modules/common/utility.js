@@ -19,8 +19,8 @@ class Observable {
   addObserver(observer) {
     this.#observers.push(observer);
   }
-  notifyAll(state) {
-    this.#observers.forEach((observer) => observer.onUpdate(state));
+  notifyAll(event) {
+    this.#observers.forEach((observer) => observer.onUpdate(event));
   }
 }
 

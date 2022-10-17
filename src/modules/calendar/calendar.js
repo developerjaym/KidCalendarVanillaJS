@@ -10,6 +10,78 @@ import {
 import { IdentifierUtility, Observable, Observer } from "../common/utility.js";
 import { HolidayUtility, LocalDate } from "./LocalDate.js";
 
+class AddActivityFormModal extends Modal {
+  constructor(onAdd, dateString, activity) {
+    super();
+    const title = document.createElement("h2");
+    title.textContent =
+      "Activity for " + LocalDate.fromISOString(dateString).toLocaleString();
+    const form = document.createElement("form");
+    const textLabel = document.createElement("label");
+    textLabel.textContent = "Activity";
+    const textInput = document.createElement("input");
+    textInput.name = "text";
+    textInput.required = true;
+    textInput.minLength = 1;
+    textInput.maxLength = 20;
+    textInput.value = activity?.text || ""; // set default value
+    textLabel.append(textInput);
+    const colorSelect = SelectFactory.createSelect(
+      "color",
+      Colors.ALL,
+      activity?.color || Colors.TRANSPARENT
+    );
+    const colorLabel = document.createElement("label");
+    colorLabel.textContent = "Color";
+    colorLabel.append(colorSelect);
+    const iconSelect = SelectFactory.createSelect(
+      "icon",
+      Icons.ALL,
+      activity?.icon || Icons.EMPTY
+    );
+    const iconLabel = document.createElement("label");
+    iconLabel.textContent = "Icon";
+    iconLabel.append(iconSelect);
+
+    const frequencyLabel = document.createElement("label");
+    frequencyLabel.textContent = "Repeat Frequency";
+    const frequencyInput = SelectFactory.createSelect("repeatFrequency", [
+      RepeatInterval.DAILY.name,
+      RepeatInterval.WEEKLY.name,
+      RepeatInterval.NONE.name,
+    ]);
+    frequencyLabel.append(frequencyInput);
+
+    const untilLabel = document.createElement("label");
+    const until = document.createElement("input");
+    until.type = "date";
+    until.name = "repeatUntil";
+    untilLabel.textContent = "Repeat Until";
+    untilLabel.appendChild(until);
+
+    const button = ButtonFactory.createSubmitButton(
+      Boolean(activity) ? "Update" : "Add"
+    );
+    form.onsubmit = (e) => {
+      e.preventDefault(); // so it doesn't try to submit the form
+      const data = Object.fromEntries(new FormData(e.target));
+      onAdd(data);
+      super.close();
+    };
+    form.append(
+      textLabel,
+      colorLabel,
+      iconLabel,
+      ...[
+        Boolean(activity) ? [] : frequencyLabel,
+        Boolean(activity) ? [] : untilLabel,
+      ],
+      button
+    );
+    super.append(title, form);
+  }
+}
+
 class RepeatInterval {
   static DAILY = new RepeatInterval(1, "Daily");
   static WEEKLY = new RepeatInterval(7, "Weekly");
@@ -54,24 +126,6 @@ class CalendarEntryHelper {
       activities: activities,
     };
   }
-  static addActivity(entry, activity) {
-    entry.activities.push(activity);
-  }
-  static removeActivity(entry, activityId) {
-    entry.activities.splice(
-      entry.activities.findIndex((activity) => activity.id === activityId),
-      1
-    );
-  }
-  static updateActivity(entry, newActivityValue) {
-    entry.activities.splice(
-      entry.activities.findIndex(
-        (activity) => activity.id === newActivityValue.id
-      ),
-      1,
-      newActivityValue
-    );
-  }
 }
 
 class StateHelper {
@@ -88,16 +142,15 @@ class StateHelper {
     return Boolean(state.calendarEntries[date]);
   }
   static addActivity(state, date, activity) {
-    CalendarEntryHelper.addActivity(state.calendarEntries[date], activity);
+    state.calendarEntries[date].activities.push(activity);
   }
-  static removeActivity(state, date, activityId) {
-    CalendarEntryHelper.removeActivity(state.calendarEntries[date], activityId);
+  static removeActivity(state, activityId) {
+    Object.values(state.calendarEntries).forEach(entry => entry.activities = entry.activities.filter(activity => activity.id !== activityId))
   }
-  static updateActivity(state, entry, newActivityValue) {
-    CalendarEntryHelper.updateActivity(
-      state.calendarEntries[entry.dateString],
-      newActivityValue
-    );
+  static updateActivity(state, activityId, newActivityValue) {
+    const entryToUpdate = Object.values(state.calendarEntries).find(entry => entry.activities.some(activity => activity.id === activityId));
+    const activityIndex = entryToUpdate.activities.indexOf(activity => activity.id === activityId);
+    entryToUpdate.activities.splice(activityIndex, 1, newActivityValue)
   }
   static clearEntries(state) {
     state.calendarEntries = {};
@@ -115,19 +168,28 @@ class StateHelper {
   }
 }
 
+class EventTypes {
+  static CALENDAR_LOAD = "calendar/load";
+  static CALENDAR_DAYS_VISIBLE = "calendar/daysVisible";
+  static CALENDAR_ADD = "calendar/add";
+  static CALENDAR_UPDATE = "calendar/update";
+  static CALENDAR_REMOVE = "calendar/remove";
+}
+
 class Model extends Observable {
   #state;
   constructor() {
     super();
   }
-  onInitialLoad(state = StateHelper.create()) {
-    this.#state = state;
+  onInitialLoad(state) {
+    this.#state = state || StateHelper.create();
     this.#deleteEarlierEntries();
-    this.notifyAll(this.#state);
+    this.notifyAll({state: this.#state, type: "calendar/load", added: Object.keys(this.#state.calendarEntries), removed: []});
   }
   setDaysVisible(newDaysVisible) {
     StateHelper.setDaysVisible(this.#state, newDaysVisible);
-    this.notifyAll(this.#state);
+    // TODO figure out the dates that got added or removed from state.calendarEntries
+    this.notifyAll({state: this.#state, type: "calendar/daysVisible", added: Object.keys(this.#state.calendarEntries), removed: []});
   }
   addActivity(date, newActivity) {
     const repeat = new Repeat(
@@ -157,17 +219,20 @@ class Model extends Observable {
         dateToAddTo = dateToAddTo.next();
       }
     }
-    this.notifyAll(this.#state);
+    // TODO figure out what dates got changed
+    this.notifyAll({state: this.#state, type: "calendar/add", added: Object.keys(this.#state.calendarEntries), removed: []});
   }
-  removeActivity(entry, activityId) {
-    StateHelper.removeActivity(this.#state, entry.dateString, activityId);
-    this.notifyAll(this.#state);
+  removeActivity(activityId) {
+    StateHelper.removeActivity(this.#state, activityId);
+    // TODO figure out what dates got changed
+    this.notifyAll({state: this.#state, type: "calendar/remove", added: Object.keys(this.#state.calendarEntries), removed: []});
   }
-  updateActivity(entry, newActivityValue, activityId) {
+  updateActivity(newActivityValue, activityId) {
     const activity = CalendarEntryActivityHelper.create(newActivityValue);
     activity.id = activityId;
-    StateHelper.updateActivity(this.#state, entry, activity);
-    this.notifyAll(this.#state);
+    StateHelper.updateActivity(this.#state, activityId, activity);
+    // TODO figure out what dates got updated
+    this.notifyAll({state: this.#state, type: "calendar/update", added: Object.keys(this.#state.calendarEntries), removed: []});
   }
   #deleteEarlierEntries() {
     // I don't need to display anything from before today, so let's save space
@@ -175,66 +240,29 @@ class Model extends Observable {
   }
 }
 
-class CalendarEntryActivityRenderer {
-  #controller;
-  constructor(controller) {
-    this.#controller = controller;
-  }
-  render(entry, activity) {
-    const activityContainer = document.createElement("span");
-    activityContainer.classList.add("calendar-entry__activity");
-    const iconElement = document.createElement("span");
-    iconElement.classList.add("icon");
-    iconElement.textContent = activity.icon;
-    const textElement = document.createElement("span");
-    textElement.textContent = activity.text;
-    activityContainer.append(iconElement, textElement);
-    activityContainer.style.backgroundColor = activity.color;
-    const deleteActivityButton = ButtonFactory.createIconButton(Icons.DELETE);
-    deleteActivityButton.onclick = (e) => {
-      e.stopPropagation();
-      this.#controller.onActivityDeleted(entry, activity.id);
-    };
-    activityContainer.onclick = (e) => {
-      e.stopPropagation();
-      new AddEntryFormModal(
-        (newActivityValue) => {
-          this.#controller.onActivityUpdated(
-            entry,
-            newActivityValue,
-            activity.id
-          );
-        },
-        entry.dateString,
-        activity
-      ).show();
-    };
-    activityContainer.append(deleteActivityButton);
-    return activityContainer;
-  }
-}
 
-class CalendarEntryRenderer {
+class CalendarEntryComponent {
+  #element;
+  #activityComponents;
   #controller;
-  #activityRenderer;
-  constructor(controller, activityRenderer) {
+  #dateString;
+  constructor(dateString, controller) {
+    this.#dateString = dateString;
+    this.#activityComponents = new Map();
     this.#controller = controller;
-    this.#activityRenderer = activityRenderer;
+    this.#element = this.#createElement(dateString);
   }
-  render(dateString, entry) {
+  #createElement(dateString) {
     const container = document.createElement("div");
     container.id = dateString;
     container.classList.add("calendar-entry");
-    this.#style(container, dateString, entry);
+    this.#style(container, dateString);
     const dateLabel = document.createElement("h3");
     dateLabel.classList.add("calendar-entry__header");
     dateLabel.textContent = this.#formatDateString(dateString);
     container.append(dateLabel);
-    for (let activity of entry?.activities || []) {
-      container.append(this.#activityRenderer.render(entry, activity));
-    }
     container.onclick = (e) => {
-      new AddEntryFormModal((newEntryValue) => {
+      new AddActivityFormModal((newEntryValue) => {
         this.#controller.onActivityAdded(
           LocalDate.fromISOString(dateString),
           newEntryValue
@@ -243,7 +271,7 @@ class CalendarEntryRenderer {
     };
     return container;
   }
-  #style(container, dateString, entry) {
+  #style(container, dateString) {
     container.style.borderColor = LocalDate.fromISOString(
       dateString
     ).isWeekend()
@@ -257,105 +285,136 @@ class CalendarEntryRenderer {
       asDate.getDayOfWeek().name
     } ${asDate.toLocaleString()}`;
   }
+  getElement() {
+    return this.#element;
+  }
+  onChange(newEntry) {
+    // remove activities that don't exist
+    for(let key of this.#activityComponents.keys()){
+      if(newEntry.activities.none(activity => activity.id === key)) {
+        console.log("deleting on change", key);
+        this.#activityComponents.delete(activity.id);
+        document.getElementById(`${activity.id}`).remove()
+      }
+    }
+    for(let activity of newEntry?.activities || []) {
+      if(this.#activityComponents.has(activity.id)) {
+        // update
+        console.log("updating on change", activity.id);
+        this.#activityComponents.get(activity.id).onChange(activity);
+      }
+      else {
+        // add
+        console.log("adding on change", activity.id);
+        const newComponent = new CalendarActivityComponent(activity, this.#dateString, this.#controller);
+        this.#activityComponents.set(activity.id, newComponent);
+        this.#element.appendChild(newComponent.getElement());
+      }
+    }
+  }
 }
 
-class AddEntryFormModal extends Modal {
-  constructor(onAdd, dateString, entry) {
-    super();
-    const title = document.createElement("h2");
-    title.textContent =
-      "Activity for " + LocalDate.fromISOString(dateString).toLocaleString();
-    const form = document.createElement("form");
-    const textLabel = document.createElement("label");
-    textLabel.textContent = "Activity";
-    const textInput = document.createElement("input");
-    textInput.name = "text";
-    textInput.required = true;
-    textInput.minLength = 1;
-    textInput.maxLength = 20;
-    textInput.value = entry?.text || ""; // set default value
-    textLabel.append(textInput);
-    const colorSelect = SelectFactory.createSelect(
-      "color",
-      Colors.ALL,
-      entry?.color || Colors.TRANSPARENT
-    );
-    const colorLabel = document.createElement("label");
-    colorLabel.textContent = "Color";
-    colorLabel.append(colorSelect);
-    const iconSelect = SelectFactory.createSelect(
-      "icon",
-      Icons.ALL,
-      entry?.icon || Icons.EMPTY
-    );
-    const iconLabel = document.createElement("label");
-    iconLabel.textContent = "Icon";
-    iconLabel.append(iconSelect);
+class CalendarActivityComponent {
+  #activity;
+  #element;
+  #controller;
+  constructor(activity, dateString, controller) {
+    this.#activity = activity;
+    this.#controller = controller;
+    this.#element = this.#createElement(this.#activity, dateString);
+  }
+  #createElement(activity, dateString) {
+      const activityContainer = document.createElement("span");
+      activityContainer.id = activity.id;
+      activityContainer.classList.add("calendar-entry__activity");
+      const iconElement = document.createElement("span");
+      iconElement.classList.add("icon");
+      iconElement.textContent = activity.icon;
+      const textElement = document.createElement("span");
+      textElement.textContent = activity.text;
+      activityContainer.append(iconElement, textElement);
+      activityContainer.style.backgroundColor = activity.color;
+      const deleteActivityButton = ButtonFactory.createIconButton(Icons.DELETE);
+      deleteActivityButton.onclick = (e) => {
+        e.stopPropagation();
+        this.#controller.onActivityDeleted(activity.id);
+      };
+      activityContainer.onclick = (e) => {
+        e.stopPropagation();
+        new AddActivityFormModal(
+          (newActivityValue) => {
+            this.#controller.onActivityUpdated(
+              newActivityValue,
+              activity.id
+            );
+          },
+          dateString,
+          activity
+        ).show();
+      };
+      activityContainer.append(deleteActivityButton);
+      return activityContainer;
+  }
+  getElement() {
+    return this.#element;
+  }
+  onChange(newActivity) {
+    console.log("activity::onChange", newActivity);
+    // change text
+    // change icon
+    // change background-color
+    if(newActivity.text !== this.#activity.text) {
 
-    const frequencyLabel = document.createElement("label");
-    frequencyLabel.textContent = "Repeat Frequency";
-    const frequencyInput = SelectFactory.createSelect("repeatFrequency", [
-      RepeatInterval.DAILY.name,
-      RepeatInterval.WEEKLY.name,
-      RepeatInterval.NONE.name,
-    ]);
-    frequencyLabel.append(frequencyInput);
-
-    const untilLabel = document.createElement("label");
-    const until = document.createElement("input");
-    until.type = "date";
-    until.name = "repeatUntil";
-    untilLabel.textContent = "Repeat Until";
-    untilLabel.appendChild(until);
-
-    const button = ButtonFactory.createSubmitButton(
-      Boolean(entry) ? "Update" : "Add"
-    );
-    form.onsubmit = (e) => {
-      e.preventDefault(); // so it doesn't try to submit the form
-      const data = Object.fromEntries(new FormData(e.target));
-      onAdd(data);
-      super.close();
-    };
-    form.append(
-      textLabel,
-      colorLabel,
-      iconLabel,
-      ...[
-        Boolean(entry) ? [] : frequencyLabel,
-        Boolean(entry) ? [] : untilLabel,
-      ],
-      button
-    );
-    super.append(title, form);
+    }
+    this.#activity = newActivity;
   }
 }
 
 class CalendarListComponent extends Observer {
   #controller;
   #calendarListElement;
-  #calendarEntryRenderer;
   #tracked;
-  constructor(controller, calendarEntryRenderer) {
+  #calendarEntryComponents;
+  constructor(controller) {
     super();
     this.#controller = controller;
-    this.#calendarEntryRenderer = calendarEntryRenderer;
     this.#calendarListElement = document.getElementById("calendarList");
     this.#tracked = {
       calendarEntries: [],
     };
+    this.#calendarEntryComponents = [];
   }
-  onUpdate(state) {
+  onUpdate({state, added, removed, type}) {
+    // TODO look at the other properties on the event to selectively re-render
+    /* 
+    { changed: [{
+      date: "2022-10-20",
+      activities: ["1234", "56789"],
+      type: "add/date" (|"")
+    }]}
+    */
+   /*
+    addedDates: ["2020-10-10"],
+    removedDates: ["2020-10-11"]
+
+    Let's say I have a CalendarListComponent that holds an array of CalendarEntryComponents.
+    And let's say CalendarEntryComponent holds an array of CalendarActivityComponents.
+    When a new state comes through,
+       CalendarListComponent can tell each CalendarEntryComponent
+         "here is what your 'day' looks like now"
+         The CalendarEntryComponent can then delete itself
+         OR tell each CalendarActivityComponent
+           "here is what your 'activity' looks like now"
+   */
     let date = LocalDate.today();
     let thisLoad = [];
     this.#calendarListElement.textContent = ""; // remove all children
     for (let i = 0; i < state.daysVisible; i++) {
       const d = date.clone(); // clone to prevent weirdness
       const dateAsString = d.toISOString();
-      const calendarEntryElement = this.#calendarEntryRenderer.render(
-        dateAsString,
-        state.calendarEntries[dateAsString]
-      );
+      const calendarEntryComponent = new CalendarEntryComponent(dateAsString, this.#controller);
+      calendarEntryComponent.onChange(state.calendarEntries[dateAsString]);
+      const calendarEntryElement = calendarEntryComponent.getElement();
       this.#calendarListElement.append(calendarEntryElement);
       if (!this.#tracked.calendarEntries.includes(dateAsString)) {
         UIAnimation.createAppearingAnimation(calendarEntryElement);
@@ -395,8 +454,10 @@ class VisibleDaysInputComponent extends Observer {
       this.#controller.onVisibleDaysInputUpdated(this.#visibleDaysInput.value);
     this.#visibleDaysInput.onchange = visibleDaysInputListener;
   }
-  onUpdate(state) {
-    this.#visibleDaysInput.value = state.daysVisible;
+  onUpdate({state, type}) {
+    if(type === "calendar/daysVisible") {
+      this.#visibleDaysInput.value = state.daysVisible;
+    }
   }
 }
 
@@ -411,11 +472,11 @@ class Controller {
   onActivityAdded(date, newActivity) {
     this.#model.addActivity(date, newActivity);
   }
-  onActivityDeleted(entry, activityId) {
-    this.#model.removeActivity(entry, activityId);
+  onActivityDeleted(activityId) {
+    this.#model.removeActivity(activityId);
   }
-  onActivityUpdated(entry, newActivityValue, activityId) {
-    this.#model.updateActivity(entry, newActivityValue, activityId);
+  onActivityUpdated(newActivityValue, activityId) {
+    this.#model.updateActivity(newActivityValue, activityId);
   }
 }
 
@@ -497,7 +558,7 @@ class StorageManager {
   constructor(implementation) {
     this.implementation = implementation;
   }
-  onUpdate(state) {
+  onUpdate({state}) {
     this.implementation.save(state);
   }
 }
@@ -510,7 +571,5 @@ export {
   Model,
   CalendarListComponent,
   VisibleDaysInputComponent,
-  CalendarEntryRenderer,
-  CalendarEntryActivityRenderer,
   JumpToDaysInputComponent,
 };
