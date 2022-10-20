@@ -3,11 +3,10 @@ import {
   LocalStorageService,
   CalendarPage
 } from "./modules/calendar/calendar.js";
-import environment from "./modules/common/environment.js";
+import environment from "./modules/environments/environment.js";
 
 (async () => {
-  // const storageImplementation = new RemoteStorageService(environment);
-  const storageImplementation = new LocalStorageService(environment);
+  const storageImplementation = environment.storageSolution === "ls" ? new LocalStorageService(environment) : new RemoteStorageService(environment);;
   try {
     await new CalendarPage(storageImplementation).onInit();
   } catch (e) {

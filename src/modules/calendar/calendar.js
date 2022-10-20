@@ -7,7 +7,7 @@ import {
   SelectFactory,
   UIAnimation,
 } from "../common/ui.js";
-import { IdentifierUtility, Observable, Observer } from "../common/utility.js";
+import { IdentifierUtility, Observable, Observer, ArrayUtility } from "../common/utility.js";
 import { HolidayUtility, LocalDate } from "./LocalDate.js";
 
 class AddActivityFormModal extends Modal {
@@ -125,7 +125,7 @@ class CalendarEntryHelper {
   static create(localDate, activities = []) {
     return {
       dateString: localDate.toISOString(),
-      activities: activities,
+      activities,
     };
   }
 }
@@ -148,17 +148,14 @@ class StateHelper {
   }
   static removeActivity(state, activityId) {
     Object.values(state.calendarEntries).forEach(
-      (entry) =>
-        (entry.activities = entry.activities.filter(
-          (activity) => activity.id !== activityId
-        ))
+      (entry) => ArrayUtility.removeIf(entry.activities, (activity) => activity.id === activityId)
     );
   }
   static updateActivity(state, activityId, newActivityValue) {
     const entryToUpdate = Object.values(state.calendarEntries).find((entry) =>
       entry.activities.some((activity) => activity.id === activityId)
     );
-    const activityIndex = entryToUpdate.activities.indexOf(
+    const activityIndex = entryToUpdate.activities.findIndex(
       (activity) => activity.id === activityId
     );
     entryToUpdate.activities.splice(activityIndex, 1, newActivityValue);
@@ -436,7 +433,7 @@ class CalendarListComponent extends Observer {
         UIAnimation.createDisappearingAnimation(calendarEntryComponent.getElement());
       }
     }
-    this.#calendarEntryComponents = this.#calendarEntryComponents.filter(comp => !removeMe.includes(comp));
+    this.#calendarEntryComponents.splice(this.#calendarEntryComponents.findIndex(comp => removeMe.includes(comp)), 1);
     for (let dateString of arrayOfDateStrings) {
       const matchingEntryComponent = this.#calendarEntryComponents.find(
         (entryComponent) => entryComponent.getElement().id === dateString

@@ -1,6 +1,16 @@
 class IdentifierUtility {
   static generateRandomId() {
-    return Math.floor(Math.random() * 10000000000 + 1);
+    return crypto.randomUUID();
+  }
+}
+
+class ArrayUtility {
+  static removeIf(arr, test) {
+    let index = arr.findIndex(test);
+    while(index !== -1) {
+      arr.splice(index, 1);
+      index = arr.findIndex(test);
+    }
   }
 }
 
@@ -20,8 +30,8 @@ class Observable {
     this.#observers.push(observer);
   }
   notifyAll(event) {
-    this.#observers.forEach((observer) => observer.onUpdate(event));
+    this.#observers.forEach((observer) => observer.onUpdate(structuredClone(event)));
   }
 }
 
-export { IdentifierUtility, Observer, Observable };
+export { IdentifierUtility, Observer, Observable, ArrayUtility };

@@ -10,7 +10,6 @@ class Modal {
             e.stopPropagation();
 
         this.#container.append(this.#modal);
-
         this.#container.onclick = e => this.close();
     }
     append(...innerElements) {
@@ -50,7 +49,7 @@ class Icons {
     static TOY = '🧸';
     static CAROUSEL = '🎠';
     static EMPTY = '';
-    static ALL = [Icons.EMPTY, Icons.STAR, Icons.DELETE, Icons.ADD, Icons.BAGEL, Icons.HAMBURGER, Icons.OLD_WOMAN, Icons.SCHOOL, Icons.TOY, Icons.CAROUSEL, Icons.PLANE, Icons.SHIP, Icons.CAR, Icons.CITY, Icons.WEDDING, Icons.HOSPITAL, Icons.DANCE, Icons.LIBRARY, Icons.MUSIC];
+    static ALL = [Icons.EMPTY, Icons.STAR, Icons.ADD, Icons.BAGEL, Icons.HAMBURGER, Icons.OLD_WOMAN, Icons.SCHOOL, Icons.TOY, Icons.CAROUSEL, Icons.PLANE, Icons.SHIP, Icons.CAR, Icons.CITY, Icons.WEDDING, Icons.HOSPITAL, Icons.DANCE, Icons.LIBRARY, Icons.MUSIC];
 }
 
 class ButtonFactory {
