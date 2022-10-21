@@ -101,15 +101,16 @@ export class FormFieldBuilder {
         input.type = this.#type;
         input.name = this.#name;
         input.value = this.#value;
-        input.minLength = this.#minLength;
-        input.maxLength = this.#maxLength;
-        input.min = this.#min;
-        input.max = this.#max;
-        input.autocomplete = this.#autoComplete;
+        input.minLength = this.#minLength || 0;
+        input.maxLength = this.#maxLength || Number.MAX_SAFE_INTEGER;
+        input.min = this.#min || Number.MIN_VALUE;
+        input.max = this.#max || Number.MAX_VALUE;
+        if(this.#autoComplete) {
+            input.autocomplete = this.#autoComplete;
+        }
         if (this.#options) {
           const datalist = document.createElement("datalist");
           datalist.id = input.name || IdentifierUtility.generateRandomId();
-          console.log(input, datalist.id);
           input.list = datalist.id;
           this.#options.forEach((option) => {
             const optionElement = document.createElement("option");
@@ -161,7 +162,6 @@ export class FormBuilder {
     return this.#element;
   }
   static quickBuild(onSubmit, buttonText, ...configObjects) {
-    console.log(configObjects.map(FormFieldBuilder.quickBuild));
     return new FormBuilder()
       .withFields(...configObjects.map(FormFieldBuilder.quickBuild))
       .buttonText(buttonText)
