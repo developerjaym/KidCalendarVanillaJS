@@ -29,12 +29,12 @@ export class FormFieldBuilder {
       type: this.#type = FormFieldType.TEXT,
       options: this.#options,
       name: this.#name,
-      autoComplete: this.#autoComplete,
+      autoComplete: this.#autoComplete = "",
       required: this.#required = false,
-      min: this.#min,
-      max: this.#max,
-      minLength: this.#minLength,
-      maxLength: this.#maxLength,
+      min: this.#min = -1 * Number.MAX_SAFE_INTEGER,
+      max: this.#max = Number.MAX_SAFE_INTEGER,
+      minLength: this.#minLength = 0,
+      maxLength: this.#maxLength = Number.MAX_SAFE_INTEGER,
       value: this.#value = "",
     } = obj);
   }
@@ -101,10 +101,10 @@ export class FormFieldBuilder {
         input.type = this.#type;
         input.name = this.#name;
         input.value = this.#value;
-        input.minLength = this.#minLength || 0;
-        input.maxLength = this.#maxLength || Number.MAX_SAFE_INTEGER;
-        input.min = this.#min || Number.MIN_VALUE;
-        input.max = this.#max || Number.MAX_VALUE;
+        input.minLength = this.#minLength;
+        input.maxLength = this.#maxLength;
+        input.min = this.#min;
+        input.max = this.#max;
         if(this.#autoComplete) {
             input.autocomplete = this.#autoComplete;
         }
