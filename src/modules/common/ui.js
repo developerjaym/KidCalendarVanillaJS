@@ -154,7 +154,6 @@ class Colors {
 class ErrorModal extends Modal {
     constructor(text) {
         super();
-        const formArea = document.createElement("div");
         const title = document.createElement("h2");
         title.textContent =
             "Oh no!";
@@ -172,4 +171,5 @@ class ErrorModal extends Modal {
     }
 }
 
-export {Modal, ErrorModal, Colors, UIAnimation, ButtonFactory, Icons, RadioFactory, SelectFactory}
+
+export { Modal, ErrorModal, Colors, UIAnimation, ButtonFactory, Icons, RadioFactory, SelectFactory}

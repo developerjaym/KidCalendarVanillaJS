@@ -1,13 +1,18 @@
+import { FormBuilder, FormFieldType } from "../common/form.js";
 import {
   ButtonFactory,
   Colors,
   ErrorModal,
   Icons,
   Modal,
-  SelectFactory,
   UIAnimation,
 } from "../common/ui.js";
-import { IdentifierUtility, Observable, Observer, ArrayUtility } from "../common/utility.js";
+import {
+  ArrayUtility,
+  IdentifierUtility,
+  Observable,
+  Observer,
+} from "../common/utility.js";
 import { HolidayUtility, LocalDate } from "./LocalDate.js";
 
 class AddActivityFormModal extends Modal {
@@ -16,67 +21,59 @@ class AddActivityFormModal extends Modal {
     const title = document.createElement("h2");
     title.textContent =
       "Activity for " + LocalDate.fromISOString(dateString).toLocaleString();
-    const form = document.createElement("form");
-    const textLabel = document.createElement("label");
-    textLabel.textContent = "Activity";
-    const textInput = document.createElement("input");
-    textInput.name = "text";
-    textInput.required = true;
-    textInput.minLength = 1;
-    textInput.maxLength = 20;
-    textInput.value = activity?.text || ""; // set default value
-    textLabel.append(textInput);
-    const colorSelect = SelectFactory.createSelect(
-      "color",
-      Colors.ALL,
-      activity?.color || Colors.TRANSPARENT
-    );
-    const colorLabel = document.createElement("label");
-    colorLabel.textContent = "Color";
-    colorLabel.append(colorSelect);
-    const iconSelect = SelectFactory.createSelect(
-      "icon",
-      Icons.ALL,
-      activity?.icon || Icons.EMPTY
-    );
-    const iconLabel = document.createElement("label");
-    iconLabel.textContent = "Icon";
-    iconLabel.append(iconSelect);
 
-    const frequencyLabel = document.createElement("label");
-    frequencyLabel.textContent = "Repeat Frequency";
-    const frequencyInput = SelectFactory.createSelect("repeatFrequency", [
-      RepeatInterval.DAILY.name,
-      RepeatInterval.WEEKLY.name,
-      RepeatInterval.NONE.name,
-    ]);
-    frequencyLabel.append(frequencyInput);
-
-    const untilLabel = document.createElement("label");
-    const until = document.createElement("input");
-    until.type = "date";
-    until.name = "repeatUntil";
-    untilLabel.textContent = "Repeat Until";
-    untilLabel.appendChild(until);
-
-    const button = ButtonFactory.createSubmitButton(
-      Boolean(activity) ? "Update" : "Add"
-    );
-    form.onsubmit = (e) => {
-      e.preventDefault(); // so it doesn't try to submit the form
-      const data = Object.fromEntries(new FormData(e.target));
-      onAdd(data);
-      super.close();
-    };
-    form.append(
-      textLabel,
-      colorLabel,
-      iconLabel,
+    const form = FormBuilder.quickBuild(
+      (data) => {
+        onAdd(data);
+        super.close();
+      },
+      Boolean(activity) ? "Update" : "Add",
+      {
+        type: FormFieldType.TEXT,
+        label: "Activity",
+        name: "text",
+        required: true,
+        minLength: 1,
+        maxLength: 20,
+        value: activity?.text || "",
+      },
+      {
+        type: FormFieldType.SELECT,
+        name: "color",
+        label: "Color",
+        value: activity?.color || Colors.TRANSPARENT,
+        options: Colors.ALL,
+      },
+      {
+        type: FormFieldType.SELECT,
+        name: "icon",
+        label: "Icon",
+        value: activity?.icon || Icons.EMPTY,
+        options: Icons.ALL,
+      },
       ...[
-        Boolean(activity) ? [] : frequencyLabel,
-        Boolean(activity) ? [] : untilLabel,
-      ],
-      button
+        Boolean(activity)
+          ? []
+          : [
+              {
+                type: FormFieldType.SELECT,
+                name: "repeatFrequency",
+                label: "Repeat Frequency",
+                options: [
+                  RepeatInterval.DAILY.name,
+                  RepeatInterval.WEEKLY.name,
+                  RepeatInterval.NONE.name,
+                ],
+              },
+              {
+                type: FormFieldType.DATE,
+                label: "Repeat Until",
+                name: "repeatUntil",
+              },
+            ],
+      ]
+        .flat()
+        .filter(Boolean)
     );
     super.append(title, form);
   }
@@ -110,7 +107,13 @@ class Repeat {
 }
 
 class CalendarEntryActivityHelper {
-  static create({ text, color = Colors.TRANSPARENT, icon = Icons.EMPTY, series = IdentifierUtility.generateRandomId(), id = IdentifierUtility.generateRandomId() }) {
+  static create({
+    text,
+    color = Colors.TRANSPARENT,
+    icon = Icons.EMPTY,
+    series = IdentifierUtility.generateRandomId(),
+    id = IdentifierUtility.generateRandomId(),
+  }) {
     return {
       text,
       color,
@@ -147,8 +150,11 @@ class StateHelper {
     state.calendarEntries[date].activities.push(activity);
   }
   static removeActivity(state, activityId) {
-    Object.values(state.calendarEntries).forEach(
-      (entry) => ArrayUtility.removeIf(entry.activities, (activity) => activity.id === activityId)
+    Object.values(state.calendarEntries).forEach((entry) =>
+      ArrayUtility.removeIf(
+        entry.activities,
+        (activity) => activity.id === activityId
+      )
     );
   }
   static updateActivity(state, activityId, newActivityValue) {
@@ -201,7 +207,7 @@ class Model extends Observable {
     StateHelper.setDaysVisible(this.#state, newDaysVisible);
     this.notifyAll({
       state: this.#state,
-      type: EventTypes.CALENDAR_DAYS_VISIBLE
+      type: EventTypes.CALENDAR_DAYS_VISIBLE,
     });
   }
   addActivity(date, newActivity) {
@@ -214,7 +220,10 @@ class Model extends Observable {
       repeat.until.isGreaterThan(dateToAddTo) ||
       repeat.until.isEqual(dateToAddTo)
     ) {
-      const activityToAdd = CalendarEntryActivityHelper.create({...newActivity, series: repeat.id});
+      const activityToAdd = CalendarEntryActivityHelper.create({
+        ...newActivity,
+        series: repeat.id,
+      });
       if (!StateHelper.contains(this.#state, dateToAddTo.toISOString())) {
         StateHelper.add(
           this.#state,
@@ -234,22 +243,25 @@ class Model extends Observable {
     }
     this.notifyAll({
       state: this.#state,
-      type: EventTypes.CALENDAR_ADD
+      type: EventTypes.CALENDAR_ADD,
     });
   }
   removeActivity(activityId) {
     StateHelper.removeActivity(this.#state, activityId);
     this.notifyAll({
       state: this.#state,
-      type: EventTypes.CALENDAR_REMOVE
+      type: EventTypes.CALENDAR_REMOVE,
     });
   }
   updateActivity(newActivityValue, activityId) {
-    const activity = CalendarEntryActivityHelper.create({...newActivityValue, id: activityId});
+    const activity = CalendarEntryActivityHelper.create({
+      ...newActivityValue,
+      id: activityId,
+    });
     StateHelper.updateActivity(this.#state, activityId, activity);
     this.notifyAll({
       state: this.#state,
-      type: EventTypes.CALENDAR_UPDATE
+      type: EventTypes.CALENDAR_UPDATE,
     });
   }
   updateSeries(newActivityValue, series, onlyUpdateThisAndFutureActivities) {
@@ -315,7 +327,9 @@ class CalendarEntryComponent {
     for (let key of this.#activityComponents.keys()) {
       if (!newEntry.activities.some((activity) => activity.id === key)) {
         this.#activityComponents.delete(key);
-        UIAnimation.createDisappearingAnimation(document.getElementById(`${key}`));
+        UIAnimation.createDisappearingAnimation(
+          document.getElementById(`${key}`)
+        );
       }
     }
     for (let activity of newEntry?.activities || []) {
@@ -346,7 +360,8 @@ class CalendarActivityComponent {
   constructor(activity, dateString, controller) {
     this.#activity = activity;
     this.#controller = controller;
-    [this.#element, this.#textElement, this.#iconElement] = this.#createElement(dateString);
+    [this.#element, this.#textElement, this.#iconElement] =
+      this.#createElement(dateString);
   }
   #createElement(dateString) {
     const activityContainer = document.createElement("span");
@@ -368,7 +383,10 @@ class CalendarActivityComponent {
       e.stopPropagation();
       new AddActivityFormModal(
         (newActivityValue) => {
-          this.#controller.onActivityUpdated(newActivityValue, this.#activity.id);
+          this.#controller.onActivityUpdated(
+            newActivityValue,
+            this.#activity.id
+          );
         },
         dateString,
         this.#activity
@@ -384,10 +402,10 @@ class CalendarActivityComponent {
     if (newActivity.text !== this.#activity.text) {
       this.#textElement.textContent = newActivity.text;
     }
-    if(newActivity.icon !== this.#activity.icon) {
+    if (newActivity.icon !== this.#activity.icon) {
       this.#iconElement.textContent = newActivity.icon;
     }
-    if(newActivity.color !== this.#activity.color) {
+    if (newActivity.color !== this.#activity.color) {
       this.#element.style.backgroundColor = newActivity.color;
     }
     this.#activity = newActivity;
@@ -406,8 +424,8 @@ class CalendarListComponent extends Observer {
   }
   onUpdate({ state, type }) {
     // TODO look at the other properties on the event to selectively re-render
-    document.getElementById('listLoadingWarning')?.remove();
-    switch(type) {
+    document.getElementById("listLoadingWarning")?.remove();
+    switch (type) {
       case EventTypes.CALENDAR_LOAD:
       case EventTypes.CALENDAR_DAYS_VISIBLE:
       default:
@@ -430,10 +448,17 @@ class CalendarListComponent extends Observer {
       ) {
         //remove
         removeMe.push(calendarEntryComponent);
-        UIAnimation.createDisappearingAnimation(calendarEntryComponent.getElement());
+        UIAnimation.createDisappearingAnimation(
+          calendarEntryComponent.getElement()
+        );
       }
     }
-    this.#calendarEntryComponents.splice(this.#calendarEntryComponents.findIndex(comp => removeMe.includes(comp)), 1);
+    this.#calendarEntryComponents.splice(
+      this.#calendarEntryComponents.findIndex((comp) =>
+        removeMe.includes(comp)
+      ),
+      1
+    );
     for (let dateString of arrayOfDateStrings) {
       const matchingEntryComponent = this.#calendarEntryComponents.find(
         (entryComponent) => entryComponent.getElement().id === dateString
@@ -491,7 +516,11 @@ class VisibleDaysInputComponent extends Observer {
     this.#visibleDaysInput.onchange = visibleDaysInputListener;
   }
   onUpdate({ state, type }) {
-    if ([EventTypes.CALENDAR_DAYS_VISIBLE, EventTypes.CALENDAR_LOAD].includes(type)) {
+    if (
+      [EventTypes.CALENDAR_DAYS_VISIBLE, EventTypes.CALENDAR_LOAD].includes(
+        type
+      )
+    ) {
       this.#visibleDaysInput.value = state.daysVisible;
     }
   }
@@ -509,14 +538,16 @@ class CalendarPage {
     this.#model = new Model();
     this.#controller = new Controller(this.#model);
     this.#jumpToDaysInputComponent = new JumpToDaysInputComponent();
-    this.#visibleDaysInputComponent = new VisibleDaysInputComponent(this.#controller);
+    this.#visibleDaysInputComponent = new VisibleDaysInputComponent(
+      this.#controller
+    );
     this.#calendarListComponent = new CalendarListComponent(this.#controller);
     this.#model.addObserver(this.#visibleDaysInputComponent);
     this.#model.addObserver(this.#calendarListComponent);
     this.#model.addObserver(this.#storageManager);
   }
   async onInit() {
-    const startingState = await this.#storageManager.open()
+    const startingState = await this.#storageManager.open();
     this.#model.onInitialLoad(startingState);
   }
 }
@@ -627,8 +658,4 @@ class StorageManager extends Observer {
   }
 }
 
-export {
-  CalendarPage,
-  RemoteStorageService,
-  LocalStorageService,
-};
+export { CalendarPage, RemoteStorageService, LocalStorageService };
