@@ -31,10 +31,10 @@ export class FormFieldBuilder {
       name: this.#name,
       autoComplete: this.#autoComplete = "",
       required: this.#required = false,
-      min: this.#min = -1 * Number.MAX_SAFE_INTEGER,
-      max: this.#max = Number.MAX_SAFE_INTEGER,
+      min: this.#min = -99999,
+      max: this.#max = 99999,
       minLength: this.#minLength = 0,
-      maxLength: this.#maxLength = Number.MAX_SAFE_INTEGER,
+      maxLength: this.#maxLength = 99999,
       value: this.#value = "",
     } = obj);
   }
