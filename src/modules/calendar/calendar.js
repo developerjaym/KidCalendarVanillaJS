@@ -423,7 +423,6 @@ class CalendarListComponent extends Observer {
     this.#calendarEntryComponents = [];
   }
   onUpdate({ state, type }) {
-    // TODO look at the other properties on the event to selectively re-render
     document.getElementById("listLoadingWarning")?.remove();
     switch (type) {
       case EventTypes.CALENDAR_LOAD:
@@ -453,12 +452,8 @@ class CalendarListComponent extends Observer {
         );
       }
     }
-    this.#calendarEntryComponents.splice(
-      this.#calendarEntryComponents.findIndex((comp) =>
-        removeMe.includes(comp)
-      ),
-      1
-    );
+    this.#calendarEntryComponents = this.#calendarEntryComponents.filter(comp => !removeMe.includes(comp));
+
     for (let dateString of arrayOfDateStrings) {
       const matchingEntryComponent = this.#calendarEntryComponents.find(
         (entryComponent) => entryComponent.getElement().id === dateString

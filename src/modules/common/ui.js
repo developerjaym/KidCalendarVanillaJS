@@ -24,6 +24,30 @@ class Modal {
     }
 }
 
+class Toast {
+    #toastElement;
+    static #CLOSING_TIME = 3000;
+    constructor() {
+        this.#toastElement = document.createElement('div');
+        this.#toastElement.classList.add('toast');
+    }
+    static show(text) {
+        const toast = new Toast();
+        const label = document.createElement("label");
+        label.textContent = text;
+        toast.#append(label);
+        toast.#show();
+    }
+    #append(...innerElements) {
+        this.#toastElement.append(...innerElements);
+    }
+    #show() {
+        document.getElementById('app').append(this.#toastElement);
+        UIAnimation.createAppearingAnimation(this.#toastElement);
+        window.setTimeout(() => this.#toastElement.remove(), Toast.#CLOSING_TIME);
+    }
+}
+
 
 class ButtonTypes {
     static ICON = ['button', 'button-icon'];
@@ -172,4 +196,4 @@ class ErrorModal extends Modal {
 }
 
 
-export { Modal, ErrorModal, Colors, UIAnimation, ButtonFactory, Icons, RadioFactory, SelectFactory}
+export { Toast, Modal, ErrorModal, Colors, UIAnimation, ButtonFactory, Icons, RadioFactory, SelectFactory}

@@ -4,6 +4,7 @@
     --space-thick: 0.5rem;
     --space-extra-thick: 1rem;
     --border-radius: 1rem;
+    --toast-z: 3;
     --modal-z: 2;
     --standard-z: 1;
     --animation-short: 444ms;
@@ -17,6 +18,7 @@
 html {
     font-family: sans-serif;
     background-color: gainsboro;
+    overflow: hidden;
 }
 
 #app {
@@ -171,7 +173,7 @@ form:invalid .button-submit {
 
     max-height: 100vh;
     height: 100vh;
-    overflow-y: clip;
+    overflow-y: hidden;
 }
 
 #calendarList {
@@ -181,14 +183,14 @@ form:invalid .button-submit {
     justify-content: center;
     max-height: 100vh;
     overflow-y: auto;
-    padding: var(--space-thick) var(--space-thick) 15rem var(--space-thick);
+    padding: var(--space-thick) var(--space-thick) 33vh var(--space-thick);
     row-gap: var(--space-thick);
 
 }
 
 .calendar-entry {
-    min-height: 15rem;
-    height: 33vw;
+    min-height: 20rem;
+    height: 33vh;
     max-height: 50vh;
     min-width: 20rem;
     width: 33vw;
@@ -201,6 +203,7 @@ form:invalid .button-submit {
     border-width: var(--space-thick);
     border-style: solid;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .calendar-entry__header {
@@ -217,6 +220,26 @@ form:invalid .button-submit {
     padding: var(--space-thick);
 }
 
+.toast {
+    box-sizing: border-box;
+    z-index: var(--toast-z);
+    grid-area: area;
+    width: 100%;
+    height: max-content;
+    padding: var(--space-extra-thick);
+
+    background-color: white;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+
+    place-self: end;
+    justify-self: center;
+}
+
+
 .modal-container {
     z-index: var(--modal-z);
     grid-area: area;
@@ -232,7 +255,6 @@ form:invalid .button-submit {
 }
 
 .modal {
-    height: fit-content;
     width: fit-content;
     padding: var(--space-extra-thick) calc(2 * var(--space-extra-thick)) calc(2 * var(--space-extra-thick)) calc(2 * var(--space-extra-thick));
 
@@ -242,8 +264,6 @@ form:invalid .button-submit {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-
-
 }
 
 .modal form {
@@ -252,7 +272,6 @@ form:invalid .button-submit {
 
 .modal h2 {
     margin: var(--space-thin) var(--space-thin) var(--space-extra-thick) var(--space-thin);
-
 }
 
 .disappear-short {

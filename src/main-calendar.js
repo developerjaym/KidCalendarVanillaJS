@@ -1,13 +1,18 @@
 import {
   RemoteStorageService,
   LocalStorageService,
-  CalendarPage
+  CalendarPage,
 } from "./modules/calendar/calendar.js";
 import environment from "./modules/environments/environment.js";
+import { Toast } from "./modules/common/ui.js";
 
 (async () => {
-  const storageImplementation = environment.storageSolution === "ls" ? new LocalStorageService(environment) : new RemoteStorageService(environment);;
+  const storageImplementation =
+    environment.storageSolution === "ls"
+      ? new LocalStorageService(environment)
+      : new RemoteStorageService(environment);
   try {
+    Toast.show("Welcome!");
     await new CalendarPage(storageImplementation).onInit();
   } catch (e) {
     const url = new URL(window.location.href + "authentication");
