@@ -15,6 +15,10 @@
     box-sizing: border-box;
 }
 
+option {
+    font-size: 1.25rem;
+}
+
 html {
     font-family: sans-serif;
     background-color: gainsboro;
@@ -173,19 +177,19 @@ form:invalid .button-submit {
 
     max-height: 100vh;
     height: 100vh;
-    overflow-y: hidden;
+
+    display: flex;
+    flex-direction: column;
 }
 
 #calendarList {
-
     display: grid;
     align-items: center;
     justify-content: center;
-    max-height: 100vh;
-    overflow-y: auto;
-    padding: var(--space-thick) var(--space-thick) 33vh var(--space-thick);
+    padding: var(--space-thick);
     row-gap: var(--space-thick);
 
+    overflow-y: auto;
 }
 
 .calendar-entry {
@@ -214,10 +218,13 @@ form:invalid .button-submit {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    box-sizing: border-box;
 
     border: none;
 
     padding: var(--space-thick);
+
+    cursor: pointer;
 }
 
 .toast {
