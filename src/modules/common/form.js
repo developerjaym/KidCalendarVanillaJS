@@ -1,4 +1,4 @@
-import { ButtonFactory, SelectFactory } from "./ui.js";
+import { ButtonFactory, RadioFactory, SelectFactory } from "./ui.js";
 import { IdentifierUtility } from "./utility.js";
 
 export class FormFieldType {
@@ -6,6 +6,7 @@ export class FormFieldType {
   static TEXT = "text";
   static PASSWORD = "password";
   static SELECT = "select";
+  static RADIO = "radio";
 }
 
 export class FormFieldBuilder {
@@ -21,6 +22,8 @@ export class FormFieldBuilder {
   #value;
   #label;
   #autoComplete;
+  #selectClasses;
+  #optionClasses;
   constructor(obj = {}) {
     this.#container = document.createElement("label");
     this.#type = FormFieldType.TEXT;
@@ -36,6 +39,8 @@ export class FormFieldBuilder {
       minLength: this.#minLength = 0,
       maxLength: this.#maxLength = 99999,
       value: this.#value = "",
+      selectClasses: this.#selectClasses = [],
+      optionClasses: this.#optionClasses = [],
     } = obj);
   }
 
@@ -47,6 +52,14 @@ export class FormFieldBuilder {
   withOptions(...options) {
     this.#options = options;
     return this;
+  }
+
+  withOptionClasses(...optionClasses) {
+    this.#optionClasses = optionClasses;
+  }
+
+  withSelectClasses(...selectClasses) {
+    this.#selectClasses = selectClasses;
   }
 
   withName(name) {
@@ -92,6 +105,15 @@ export class FormFieldBuilder {
         input = SelectFactory.createSelect(
           this.#name,
           this.#options,
+          this.#value,
+          this.#optionClasses ?? [],
+          this.#selectClasses ?? []
+        );
+        break;
+      case FormFieldType.RADIO:
+        input = RadioFactory.createRadioGroup(
+          this.#name,
+          this.#options,
           this.#value
         );
         break;
@@ -105,8 +127,8 @@ export class FormFieldBuilder {
         input.maxLength = this.#maxLength;
         input.min = this.#min;
         input.max = this.#max;
-        if(this.#autoComplete) {
-            input.autocomplete = this.#autoComplete;
+        if (this.#autoComplete) {
+          input.autocomplete = this.#autoComplete;
         }
         if (this.#options) {
           const datalist = document.createElement("datalist");

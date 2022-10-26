@@ -93,12 +93,13 @@ class ButtonFactory {
 }
 
 class SelectFactory {
-    static createSelect(elementName, options, selectedOption) {
-
+    static createSelect(elementName, options, selectedOption, optionClasses = [], selectClasses = []) {
         const select = document.createElement('select');
+        select.classList.add(...selectClasses)
         select.name = elementName;
         for (let option of options) {
             const optionElement = document.createElement('option');
+            optionElement.classList.add(...optionClasses);
             optionElement.textContent = option;
             optionElement.selected = option === selectedOption;
             select.append(optionElement);
@@ -108,24 +109,21 @@ class SelectFactory {
 }
 
 class RadioFactory {
-    static createRadioGroup(text, groupName, displayTextToValues) {
-        const container = document.createElement('label');
-        container.textContent = text;
-        container.classList.add('radio-group-label');
+    static createRadioGroup(groupName, options, selectedOption) {
         const buttonContainer = document.createElement('div');
         buttonContainer.classList.add('radio-group-buttons');
-        for(let displayText in displayTextToValues) {
+        for(let option of options) {
             const labelContainer = document.createElement('label')
-            labelContainer.textContent = displayText;
+            labelContainer.textContent = option;
             const radioButton = document.createElement('input');
             radioButton.type = 'radio'
             radioButton.name = groupName;
-            radioButton.value = displayTextToValues[displayText];
+            radioButton.value = option;
+            radioButton.checked = option === selectedOption;
             labelContainer.appendChild(radioButton);
             buttonContainer.append(labelContainer);
         }
-        container.appendChild(buttonContainer);
-        return container;
+        return buttonContainer;
     }
 }
 

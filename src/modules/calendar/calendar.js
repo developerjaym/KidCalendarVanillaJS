@@ -15,8 +15,12 @@ import {
 } from "../common/utility.js";
 import { HolidayUtility, LocalDate } from "./LocalDate.js";
 
-class AddActivityFormModal extends Modal {
-  constructor(onAdd, dateString, activity) {
+class UpdateType {
+  static UPDATE_ALL = "Update All";
+  static UPDATE_SINGLE = "Update Single";
+}
+class UpdateSeriesFormModal extends Modal {
+  constructor(onUpdate, dateString, activity) {
     super();
     const title = document.createElement("h2");
     title.textContent =
@@ -24,10 +28,10 @@ class AddActivityFormModal extends Modal {
 
     const form = FormBuilder.quickBuild(
       (data) => {
-        onAdd(data);
+        onUpdate(data);
         super.close();
       },
-      Boolean(activity) ? "Update" : "Add",
+      "Update",
       {
         type: FormFieldType.TEXT,
         label: "Activity",
@@ -50,30 +54,128 @@ class AddActivityFormModal extends Modal {
         label: "Icon",
         value: activity?.icon || Icons.EMPTY,
         options: Icons.ALL,
+        optionClasses: ["icon-option"],
+      },
+      {
+        type: FormFieldType.RADIO,
+        name: "updateType",
+        label: "Update Type",
+        options: [UpdateType.UPDATE_ALL, UpdateType.UPDATE_SINGLE],
+        value: UpdateType.UPDATE_SINGLE,
+      }
+    );
+    super.append(title, form);
+  }
+}
+class UpdateActivityFormModal extends Modal {
+  constructor(onUpdate, dateString, activity) {
+    super();
+    const title = document.createElement("h2");
+    title.textContent =
+      "Activity for " + LocalDate.fromISOString(dateString).toLocaleString();
+
+    const form = FormBuilder.quickBuild(
+      (data) => {
+        onUpdate(data);
+        super.close();
+      },
+      "Update",
+      {
+        type: FormFieldType.TEXT,
+        label: "Activity",
+        name: "text",
+        required: true,
+        minLength: 1,
+        maxLength: 20,
+        value: activity?.text || "",
+      },
+      {
+        type: FormFieldType.SELECT,
+        name: "color",
+        label: "Color",
+        value: activity?.color || Colors.TRANSPARENT,
+        options: Colors.ALL,
+      },
+      {
+        type: FormFieldType.SELECT,
+        name: "icon",
+        label: "Icon",
+        value: activity?.icon || Icons.EMPTY,
+        options: Icons.ALL,
+        optionClasses: ["icon-option"],
       },
       ...[
-        Boolean(activity)
-          ? []
-          : [
+        Boolean(activity.series)
+          ? [
               {
-                type: FormFieldType.SELECT,
-                name: "repeatFrequency",
-                label: "Repeat Frequency",
-                options: [
-                  RepeatInterval.DAILY.name,
-                  RepeatInterval.WEEKLY.name,
-                  RepeatInterval.NONE.name,
-                ],
+                type: FormFieldType.RADIO,
+                name: "updateType",
+                label: "Update Type",
+                options: [UpdateType.UPDATE_ALL, UpdateType.UPDATE_SINGLE],
+                value: UpdateType.UPDATE_SINGLE,
               },
-              {
-                type: FormFieldType.DATE,
-                label: "Repeat Until",
-                name: "repeatUntil",
-              },
-            ],
+            ]
+          : null,
       ]
         .flat()
         .filter(Boolean)
+    );
+    super.append(title, form);
+  }
+}
+class AddActivityFormModal extends Modal {
+  constructor(onAdd, dateString, activity) {
+    super();
+    const title = document.createElement("h2");
+    title.textContent =
+      "Activity for " + LocalDate.fromISOString(dateString).toLocaleString();
+
+    const form = FormBuilder.quickBuild(
+      (data) => {
+        onAdd(data);
+        super.close();
+      },
+      "Add",
+      {
+        type: FormFieldType.TEXT,
+        label: "Activity",
+        name: "text",
+        required: true,
+        minLength: 1,
+        maxLength: 20,
+        value: activity?.text || "",
+      },
+      {
+        type: FormFieldType.SELECT,
+        name: "color",
+        label: "Color",
+        value: activity?.color || Colors.TRANSPARENT,
+        options: Colors.ALL,
+      },
+      {
+        type: FormFieldType.SELECT,
+        name: "icon",
+        label: "Icon",
+        value: activity?.icon || Icons.EMPTY,
+        options: Icons.ALL,
+        optionClasses: ["icon-option"],
+      },
+
+      {
+        type: FormFieldType.SELECT,
+        name: "repeatFrequency",
+        label: "Repeat Frequency",
+        options: [
+          RepeatInterval.DAILY.name,
+          RepeatInterval.WEEKLY.name,
+          RepeatInterval.NONE.name,
+        ],
+      },
+      {
+        type: FormFieldType.DATE,
+        label: "Repeat Until",
+        name: "repeatUntil",
+      }
     );
     super.append(title, form);
   }
@@ -102,7 +204,10 @@ class Repeat {
   constructor(interval, untilString) {
     this.interval = interval;
     this.until = LocalDate.fromISOString(untilString);
-    this.id = IdentifierUtility.generateRandomId();
+    this.id =
+      this.interval === RepeatInterval.NONE
+        ? null
+        : IdentifierUtility.generateRandomId();
   }
 }
 
@@ -164,7 +269,17 @@ class StateHelper {
     const activityIndex = entryToUpdate.activities.findIndex(
       (activity) => activity.id === activityId
     );
+    delete newActivityValue.series;
     entryToUpdate.activities.splice(activityIndex, 1, newActivityValue);
+  }
+  static updateSeries(state, series, newActivityValue) {
+    const activitiesToUpdate = Object.values(state.calendarEntries)
+      .map((entry) =>
+        entry.activities.filter((activity) => activity.series === series)
+      )
+      .flat()
+      .filter(Boolean);
+    activitiesToUpdate.forEach((d) => Object.assign(d, newActivityValue));
   }
   static clearEntries(state) {
     state.calendarEntries = {};
@@ -212,7 +327,9 @@ class Model extends Observable {
   }
   addActivity(date, newActivity) {
     const repeat = new Repeat(
-      RepeatInterval.fromName(newActivity.repeatFrequency),
+      Boolean(newActivity.repeatUntil)
+        ? RepeatInterval.fromName(newActivity.repeatFrequency)
+        : RepeatInterval.NONE,
       newActivity.repeatUntil || date.toISOString()
     );
     let dateToAddTo = date.clone();
@@ -240,6 +357,9 @@ class Model extends Observable {
       for (let i = 0; i < repeat.interval.interval; i++) {
         dateToAddTo = dateToAddTo.next();
       }
+      if (repeat.interval.interval === 0) {
+        break;
+      }
     }
     this.notifyAll({
       state: this.#state,
@@ -264,10 +384,12 @@ class Model extends Observable {
       type: EventTypes.CALENDAR_UPDATE,
     });
   }
-  updateSeries(newActivityValue, series, onlyUpdateThisAndFutureActivities) {
-    // TODO
-    // find all activities that need updating (based on the series and the boolean onlyUpdateThisAndFutureActivities)
-    // StateHelper.updateActivity
+  updateSeries(newActivityValue, series) {
+    StateHelper.updateSeries(this.#state, series, newActivityValue);
+    this.notifyAll({
+      state: this.#state,
+      type: EventTypes.CALENDAR_UPDATE,
+    });
   }
   #deleteEarlierEntries() {
     // I don't need to display anything from before today, so let's save space
@@ -381,16 +503,38 @@ class CalendarActivityComponent {
     };
     activityContainer.onclick = (e) => {
       e.stopPropagation();
-      new AddActivityFormModal(
-        (newActivityValue) => {
-          this.#controller.onActivityUpdated(
-            newActivityValue,
-            this.#activity.id
-          );
-        },
-        dateString,
-        this.#activity
-      ).show();
+      if(this.#activity.series) {
+        new UpdateSeriesFormModal(
+          (newActivityValue) => {
+            if (newActivityValue.updateType === UpdateType.UPDATE_ALL) {
+              this.#controller.onSeriesUpdated(
+                newActivityValue,
+                this.#activity.series
+              );
+            } else {
+              this.#controller.onActivityUpdated(
+                newActivityValue,
+                this.#activity.id
+              );
+            }
+          },
+          dateString,
+          this.#activity
+        ).show();
+      }
+      else {
+        new UpdateActivityFormModal(
+          (newActivityValue) => {
+              this.#controller.onActivityUpdated(
+                newActivityValue,
+                this.#activity.id
+              );
+          },
+          dateString,
+          this.#activity
+        ).show();
+      }
+      
     };
     activityContainer.append(deleteActivityButton);
     return [activityContainer, textElement, iconElement];
@@ -452,7 +596,9 @@ class CalendarListComponent extends Observer {
         );
       }
     }
-    this.#calendarEntryComponents = this.#calendarEntryComponents.filter(comp => !removeMe.includes(comp));
+    this.#calendarEntryComponents = this.#calendarEntryComponents.filter(
+      (comp) => !removeMe.includes(comp)
+    );
 
     for (let dateString of arrayOfDateStrings) {
       const matchingEntryComponent = this.#calendarEntryComponents.find(
@@ -563,6 +709,9 @@ class Controller {
   }
   onActivityUpdated(newActivityValue, activityId) {
     this.#model.updateActivity(newActivityValue, activityId);
+  }
+  onSeriesUpdated(newActivityValue, series) {
+    this.#model.updateSeries(newActivityValue, series);
   }
 }
 
