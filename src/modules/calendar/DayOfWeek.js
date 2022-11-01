@@ -15,11 +15,27 @@ export default class DayOfWeek {
       DayOfWeek.FRIDAY,
       DayOfWeek.SATURDAY,
     ];
+    #name;
+    #shortName;
+    #isWeekend;
+    #number;
     constructor(name, shortName, isWeekend, number) {
-      this.name = name;
-      this.shortName = shortName;
-      this.isWeekend = isWeekend;
-      this.number = number;
+      this.#name = name;
+      this.#shortName = shortName;
+      this.#isWeekend = isWeekend;
+      this.#number = number;
+    }
+    get name() {
+      return this.#name;
+    }
+    get shortName() {
+      return this.#shortName;
+    }
+    get weekend() {
+      return this.#isWeekend;
+    }
+    get number() {
+      return this.#number;
     }
     static fromNumber(number) {
       return DayOfWeek.#allDays.find((day) => day.number === number);

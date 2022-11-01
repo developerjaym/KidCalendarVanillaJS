@@ -21,17 +21,17 @@ class AuthenticationService {
     try {
       const response = await fetch(
         url,
-        this.#getPostRequestOptions(data, basic)
+        this.#buildPostRequestOptions(data, basic)
       );
       const json = await response.json();
-      this.#setToken(json.token);
+      this.#token = json.token;
       return Promise.resolve(true);
     } catch (e) {
       return Promise.resolve(false);
     }
   }
   isAuthenticated() {
-    const token = this.#getToken();
+    const token = this.#token;
     if (token) {
       return (
         new Date(JSON.parse(atob(token.split(".")[1])).exp * 1000) > new Date()
@@ -39,13 +39,13 @@ class AuthenticationService {
     }
     return false;
   }
-  #getToken() {
+  get #token() {
     return localStorage.getItem(this.#environment.tokenKey);
   }
-  #setToken(newTokenValue) {
+  set #token(newTokenValue) {
     localStorage.setItem(this.#environment.tokenKey, newTokenValue);
   }
-  #getPostRequestOptions(data, basic = false) {
+  #buildPostRequestOptions(data, basic = false) {
     const myHeaders = new Headers();
     const requestOptions = {
       method: "POST",
@@ -170,7 +170,7 @@ class AuthenticationFormModal extends Modal {
       {
         type: FormFieldType.TEXT,
         name: "username",
-        autocomplete: "username",
+        autocomplete: isRegister ? "new-username" : "current-username",
         name: "username",
         label: "Username",
         required: true,

@@ -2,44 +2,54 @@ import DayOfWeek from "./DayOfWeek.js";
 
 export class LocalDate {
     #jsDate;
+    static #isInternalConstructing = false;
     constructor(jsDate) {
+        if(LocalDate.#isInternalConstructing) {
+            throw 'LocalDate constructor is private. Use a static method to get an instance'
+        }
         this.#jsDate = jsDate;
     }
 
-    getYear() {
+    get year() {
         return this.#jsDate.getUTCFullYear();
     }
 
-    getDate() {
+    get date() {
         return this.#jsDate.getUTCDate();
     }
 
-    getMonth() {
+    get month() {
         return this.#jsDate.getUTCMonth() + 1;
     }
 
-    getDay() {
+    get day() {
         return this.#jsDate.getUTCDay();
     }
 
-    getDayOfWeek() {
-        return DayOfWeek.fromNumber(this.getDay());
+    get dayOfWeek() {
+        return DayOfWeek.fromNumber(this.day);
     }
 
-    isWeekend() {
+    get weekend() {
         return this.#jsDate.getUTCDay() === 0 || this.#jsDate.getUTCDay() === 6;
     }
 
     next() {
         const clonedDate = new Date(this.#jsDate);
         clonedDate.setUTCDate(clonedDate.getUTCDate() + 1);
-        return new LocalDate(clonedDate);
+        LocalDate.#isInternalConstructing = true;
+        const instance = new LocalDate(clonedDate);
+        LocalDate.#isInternalConstructing = false;
+        return instance;
     }
 
     prior() {
         const clonedDate = new Date(this.#jsDate);
         clonedDate.setUTCDate(clonedDate.getUTCDate() - 1);
-        return new LocalDate(clonedDate);
+        LocalDate.#isInternalConstructing = true;
+        const instance = new LocalDate(clonedDate);
+        LocalDate.#isInternalConstructing = false;
+        return instance;
     }
 
     toISOString() {
@@ -51,12 +61,12 @@ export class LocalDate {
     }
 
     isGreaterThan(otherLocalDate) {
-        const yearGreater = this.getYear() > otherLocalDate.getYear();
-        const yearEqual = this.getYear() === otherLocalDate.getYear();
-        const monthGreater = this.getMonth() > otherLocalDate.getMonth();
-        const monthEqual = this.getMonth() === otherLocalDate.getMonth();
-        const dateGreater = this.getDate() > otherLocalDate.getDate();
-        const dateEqual = this.getDate() === otherLocalDate.getDate();
+        const yearGreater = this.year > otherLocalDate.year;
+        const yearEqual = this.year === otherLocalDate.year;
+        const monthGreater = this.month > otherLocalDate.month;
+        const monthEqual = this.month === otherLocalDate.month;
+        const dateGreater = this.date > otherLocalDate.date;
+        const dateEqual = this.date === otherLocalDate.date;
         if(yearGreater) {
             return true;
         }
@@ -70,9 +80,9 @@ export class LocalDate {
     }
 
     isEqual(otherLocalDate) {
-        const yearEqual = this.getYear() === otherLocalDate.getYear();
-        const monthEqual = this.getMonth() === otherLocalDate.getMonth();
-        const dateEqual = this.getDate() === otherLocalDate.getDate();
+        const yearEqual = this.year === otherLocalDate.year;
+        const monthEqual = this.month === otherLocalDate.month;
+        const dateEqual = this.date === otherLocalDate.date;
         return yearEqual && monthEqual && dateEqual;
     }
 
@@ -81,7 +91,10 @@ export class LocalDate {
     }
 
     clone() {
-        return new LocalDate(new Date(this.toISOString()));
+        LocalDate.#isInternalConstructing = true;
+        const instance = new LocalDate(new Date(this.toISOString()));
+        LocalDate.#isInternalConstructing = false;
+        return instance;
     }
 
     isValid() {
@@ -100,35 +113,61 @@ export class LocalDate {
         const todayAsDate = new Date();
         // Take today, get the user's year-month-date to initialize a LocalDate of today
         // If I did new LocalDate(new Date()), then the LocalDate would be whatever 'today' is in England
-        return LocalDate.fromISOString(`${todayAsDate.getFullYear()}-${LocalDate.#pad(todayAsDate.getMonth() + 1)}-${LocalDate.#pad(todayAsDate.getDate())}`);
+        LocalDate.#isInternalConstructing = true;
+        const instance = LocalDate.fromISOString(`${todayAsDate.getFullYear()}-${LocalDate.#pad(todayAsDate.getMonth() + 1)}-${LocalDate.#pad(todayAsDate.getDate())}`);
+        LocalDate.#isInternalConstructing = false;
+        return instance;
     }
 
     static fromISOString(string) {
-        return new LocalDate(new Date(string));
+        LocalDate.#isInternalConstructing = true;
+        const instance = new LocalDate(new Date(string));
+        LocalDate.#isInternalConstructing = false;
+        return instance;
     }
 }
 
 export class Holiday {
-    static CHRISTMAS = new Holiday("Christmas", "🎄");
-    static HALLOWEEN = new Holiday("Halloween", "🎃");
-    static THANKSGIVING = new Holiday("Thanksgiving", "🦃");
-    static FOURTH_OF_JULY = new Holiday("US Independence Day", "🇺🇸");
+    static #CHRISTMAS = new Holiday("Christmas", "🎄");
+    static #HALLOWEEN = new Holiday("Halloween", "🎃");
+    static #THANKSGIVING = new Holiday("Thanksgiving", "🦃");
+    static #FOURTH_OF_JULY = new Holiday("US Independence Day", "🇺🇸");
+    #name;
+    #icon;
     constructor(name, icon) {
-      this.name = name;
-      this.icon = icon;
+      this.#name = name;
+      this.#icon = icon;
+    }
+    get name() {
+        return this.#name;
+    }
+    get icon() {
+        return this.#icon;
+    }
+    static get CHRISTMAS() {
+        return Holiday.#CHRISTMAS;
+    }
+    static get HALLOWEEN() {
+        return Holiday.#HALLOWEEN
+    }
+    static get THANKSGIVING() {
+        return Holiday.#THANKSGIVING;
+    }
+    static get FOURTH_OF_JULY() {
+        return Holiday.#FOURTH_OF_JULY;
     }
   }
 
 export class HolidayUtility {
-    static getHolidays(localDate) {
+    static findHolidays(localDate) {
       const holidays = [];
-      if (localDate.getMonth() === 12 && localDate.getDate() === 25) {
+      if (localDate.month === 12 && localDate.date === 25) {
         holidays.push(Holiday.CHRISTMAS);
       }
-      if (localDate.getMonth() === 10 && localDate.getDate() === 31) {
+      if (localDate.month === 10 && localDate.date === 31) {
         holidays.push(Holiday.HALLOWEEN);
       }
-      if (localDate.getMonth() === 7 && localDate.getDate() === 4) {
+      if (localDate.month === 7 && localDate.date === 4) {
         holidays.push(Holiday.FOURTH_OF_JULY);
       }
       if(HolidayUtility.#isXDayOfMonth(localDate, 4, DayOfWeek.THURSDAY, 11)) {
@@ -137,12 +176,12 @@ export class HolidayUtility {
       return holidays;
     }
     static #isXDayOfMonth(localDate, count, dayOfWeek, month) {
-        const rightDay = localDate.getDayOfWeek() === dayOfWeek;
-        const rightMonth = localDate.getMonth() === month;
+        const rightDay = localDate.dayOfWeek === dayOfWeek;
+        const rightMonth = localDate.month === month;
         let actualCount = 1;
         let previousDay = localDate.prior();
-        while(rightDay && rightMonth && previousDay.getMonth() === month) {
-            if(previousDay.getDayOfWeek() === localDate.getDayOfWeek()) {
+        while(rightDay && rightMonth && previousDay.month === month) {
+            if(previousDay.dayOfWeek === localDate.dayOfWeek) {
                 actualCount++;
             }
             previousDay = previousDay.prior();
@@ -153,8 +192,8 @@ export class HolidayUtility {
   }
 
 class LocalDateFormatter {
-    static #enUS = (localDate) => `${localDate.getMonth()}/${localDate.getDate()}/${localDate.getYear()}`;
-    static #zhCN = (localDate) => `${localDate.getYear()}-${localDate.getMonth()}-${localDate.getDate()}`
+    static #enUS = (localDate) => `${localDate.month}/${localDate.date}/${localDate.year}`;
+    static #zhCN = (localDate) => `${localDate.year}-${localDate.month}-${localDate.date}`
     static format(localDate) {
         if(navigator.language === 'en-US') {
             return this.#enUS(localDate);

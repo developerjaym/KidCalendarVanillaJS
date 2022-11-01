@@ -16,8 +16,14 @@ import {
 import { HolidayUtility, LocalDate } from "./LocalDate.js";
 
 class UpdateType {
-  static UPDATE_ALL = "Update All";
-  static UPDATE_SINGLE = "Update Single";
+  static #UPDATE_ALL = "Update All";
+  static #UPDATE_SINGLE = "Update Single";
+  static get UPDATE_ALL() {
+    return UpdateType.#UPDATE_ALL;
+  }
+  static get UPDATE_SINGLE() {
+    return UpdateType.#UPDATE_SINGLE
+  }
 }
 class UpdateSeriesFormModal extends Modal {
   constructor(onUpdate, dateString, activity) {
@@ -245,7 +251,7 @@ class StateHelper {
       calendarEntries: {},
     };
   }
-  static add(state, date, entry) {
+  static addEntry(state, date, entry) {
     state.calendarEntries[date] = entry;
   }
   static contains(state, date) {
@@ -342,7 +348,7 @@ class Model extends Observable {
         series: repeat.id,
       });
       if (!StateHelper.contains(this.#state, dateToAddTo.toISOString())) {
-        StateHelper.add(
+        StateHelper.addEntry(
           this.#state,
           dateToAddTo.toISOString(),
           CalendarEntryHelper.create(dateToAddTo, [activityToAdd])
@@ -430,18 +436,18 @@ class CalendarEntryComponent {
   #style(container, dateString) {
     container.style.borderColor = LocalDate.fromISOString(
       dateString
-    ).isWeekend()
+    ).weekend
       ? Colors.WEEKEND
       : Colors.WEEKDAY;
   }
   #formatDateString(dateString) {
     const asDate = LocalDate.fromISOString(dateString);
-    const holidays = HolidayUtility.getHolidays(asDate);
+    const holidays = HolidayUtility.findHolidays(asDate);
     return `${holidays.map((h) => h.icon).join("") || "🗓"} ${
-      asDate.getDayOfWeek().name
+      asDate.dayOfWeek.name
     } ${asDate.toLocaleString()}`;
   }
-  getElement() {
+  get element() {
     return this.#element;
   }
   onChange(newEntry) {
@@ -466,8 +472,8 @@ class CalendarEntryComponent {
           this.#controller
         );
         this.#activityComponents.set(activity.id, newComponent);
-        this.#element.appendChild(newComponent.getElement());
-        UIAnimation.createAppearingAnimation(newComponent.getElement());
+        this.#element.appendChild(newComponent.element);
+        UIAnimation.createAppearingAnimation(newComponent.element);
       }
     }
   }
@@ -539,7 +545,7 @@ class CalendarActivityComponent {
     activityContainer.append(deleteActivityButton);
     return [activityContainer, textElement, iconElement];
   }
-  getElement() {
+  get element() {
     return this.#element;
   }
   onChange(newActivity) {
@@ -587,22 +593,21 @@ class CalendarListComponent extends Observer {
     const removeMe = [];
     for (let calendarEntryComponent of this.#calendarEntryComponents) {
       if (
-        !arrayOfDateStrings.includes(calendarEntryComponent.getElement().id)
+        !arrayOfDateStrings.includes(calendarEntryComponent.element.id)
       ) {
         //remove
         removeMe.push(calendarEntryComponent);
         UIAnimation.createDisappearingAnimation(
-          calendarEntryComponent.getElement()
+          calendarEntryComponent.element
         );
       }
     }
     this.#calendarEntryComponents = this.#calendarEntryComponents.filter(
       (comp) => !removeMe.includes(comp)
     );
-
     for (let dateString of arrayOfDateStrings) {
       const matchingEntryComponent = this.#calendarEntryComponents.find(
-        (entryComponent) => entryComponent.getElement().id === dateString
+        (entryComponent) => entryComponent.element.id === dateString
       );
       //change
       if (matchingEntryComponent) {
@@ -621,7 +626,7 @@ class CalendarListComponent extends Observer {
       this.#controller
     );
     calendarEntryComponent.onChange(state.calendarEntries[dateString]);
-    const calendarEntryElement = calendarEntryComponent.getElement();
+    const calendarEntryElement = calendarEntryComponent.element;
     this.#calendarListElement.append(calendarEntryElement);
     UIAnimation.createAppearingAnimation(calendarEntryElement);
     this.#calendarEntryComponents.push(calendarEntryComponent);

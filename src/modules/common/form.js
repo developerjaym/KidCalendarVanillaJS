@@ -2,11 +2,27 @@ import { ButtonFactory, RadioFactory, SelectFactory } from "./ui.js";
 import { IdentifierUtility } from "./utility.js";
 
 export class FormFieldType {
-  static DATE = "date";
-  static TEXT = "text";
-  static PASSWORD = "password";
-  static SELECT = "select";
-  static RADIO = "radio";
+  static #DATE = "date";
+  static #TEXT = "text";
+  static #PASSWORD = "password";
+  static #SELECT = "select";
+  static #RADIO = "radio";
+
+  static get DATE() {
+    return FormFieldType.#DATE;
+  }
+  static get TEXT() {
+    return FormFieldType.#TEXT;
+  }
+  static get PASSWORD() {
+    return FormFieldType.#PASSWORD;
+  }
+  static get SELECT() {
+    return FormFieldType.#SELECT;
+  }
+  static get RADIO() {
+    return FormFieldType.#RADIO;
+  }
 }
 
 export class FormFieldBuilder {
@@ -21,7 +37,7 @@ export class FormFieldBuilder {
   #maxLength;
   #value;
   #label;
-  #autoComplete;
+  #autocomplete;
   #selectClasses;
   #optionClasses;
   constructor(obj = {}) {
@@ -32,7 +48,7 @@ export class FormFieldBuilder {
       type: this.#type = FormFieldType.TEXT,
       options: this.#options,
       name: this.#name,
-      autoComplete: this.#autoComplete = "",
+      autocomplete: this.#autocomplete = "",
       required: this.#required = false,
       min: this.#min = -99999,
       max: this.#max = 99999,
@@ -67,8 +83,8 @@ export class FormFieldBuilder {
     return this;
   }
 
-  withAutoComplete(autoComplete) {
-    this.#autoComplete = autoComplete;
+  withautocomplete(autocomplete) {
+    this.#autocomplete = autocomplete;
   }
 
   withLabel(text) {
@@ -127,8 +143,8 @@ export class FormFieldBuilder {
         input.maxLength = this.#maxLength;
         input.min = this.#min;
         input.max = this.#max;
-        if (this.#autoComplete) {
-          input.autocomplete = this.#autoComplete;
+        if (this.#autocomplete) {
+          input.autocomplete = this.#autocomplete;
         }
         if (this.#options) {
           const datalist = document.createElement("datalist");
