@@ -184,11 +184,27 @@ export class FormBuilder {
     this.#buttonText = buttonText;
     return this;
   }
+  static #subforminate (acc, segments, finalValue) {
+    if(segments.length === 1) {
+        acc[segments.shift()] = finalValue;
+    }
+    else {
+        let segment = segments.shift();
+        let newObj = {...acc[segment]};
+        FormBuilder.#subforminate(newObj, segments, finalValue);
+        acc[segment] = newObj;
+    }
+}
   onSubmit(onSubmit) {
     this.#element.onsubmit = (e) => {
       e.preventDefault();
       const formData = Object.fromEntries(new FormData(e.target));
-      onSubmit(formData);
+      let keys = Object.keys(formData);
+      const submitMe = {};
+      for(let k of keys) {
+        FormBuilder.#subforminate(submitMe, k.split("."), formData[k]);
+      }
+      onSubmit(submitMe);
     };
     return this;
   }

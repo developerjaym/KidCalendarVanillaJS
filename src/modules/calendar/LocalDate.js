@@ -4,7 +4,7 @@ export class LocalDate {
     #jsDate;
     static #isInternalConstructing = false;
     constructor(jsDate) {
-        if(LocalDate.#isInternalConstructing) {
+        if(!LocalDate.#isInternalConstructing) {
             throw 'LocalDate constructor is private. Use a static method to get an instance'
         }
         this.#jsDate = jsDate;

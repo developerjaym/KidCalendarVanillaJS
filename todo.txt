@@ -1,4 +1,1 @@
-1. Add something like 'seriesId' to calendarEntryActivities
-   That will allow me to 'update series' and 'delete series', etc.
-   (if the activity is created with a repeat, give it a series id)
-   (the update modal can then ask if user is updating series or individual activity)
+1. Delete series
